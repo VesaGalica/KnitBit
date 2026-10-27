@@ -1,0 +1,21 @@
+{
+  // The framework-free layers (core/, stores/) and the plain-Node tests.
+  // Nuxt's generated configs only cover app/, server/ and shared/, so without
+  // this file these folders would never be type-checked.
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    // TextEncoder/TextDecoder are typed through Node's globals here.
+    "types": ["node"]
+  },
+  "include": ["core/**/*.ts", "stores/**/*.ts", "tests/core/**/*.ts"]
+}

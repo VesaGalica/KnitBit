@@ -1,0 +1,34 @@
+{
+  "app": {
+    "name": "KnitBit",
+    "subtitle": "Thurja si sistem binar"
+  },
+  "nav": {
+    "label": "Navigimi kryesor",
+    "encode": "Kodimi",
+    "editor": "Redaktori",
+    "algorithms": "Algoritmet",
+    "knit": "Thur"
+  },
+  "pages": {
+    "encode": {
+      "title": "Kodimi",
+      "description": "Teksti ↔ skema e thurjes"
+    },
+    "editor": {
+      "title": "Redaktori",
+      "description": "Redaktori i skemës: prek një qelizë për D/P"
+    },
+    "algorithms": {
+      "title": "Algoritmet",
+      "description": "Automatet qelizore dhe algoritmet e renditjes"
+    },
+    "knit": {
+      "title": "Thur",
+      "description": "Thur me mua: rreshti aktual dhe progresi"
+    }
+  },
+  "common": {
+    "comingSoon": "Së shpejti"
+  }
+}
