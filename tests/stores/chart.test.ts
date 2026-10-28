@@ -119,3 +119,96 @@ describe('chart store', () => {
     expect([...before.cells].every(cell => cell === 0)).toBe(true)
   })
 })
+
+describe('chart store – parity', () => {
+  it('adds a parity row and column as one undoable step', () => {
+    const store = useChartStore()
+    store.load(textToMatrix('F'))
+    store.addParity()
+    expect(store.width).toBe(9)
+    expect(store.height).toBe(2)
+    expect(store.hasParity).toBe(true)
+    // F = 01000110 has three P stitches, so its row parity is 1.
+    expect(store.matrix[0]).toEqual([0, 1, 0, 0, 0, 1, 1, 0, 1])
+  })
+
+  it('keeps the data part unchanged in dataMatrix', () => {
+    const store = useChartStore()
+    store.load(textToMatrix('FIEK'))
+    store.addParity()
+    expect(store.dataMatrix).toEqual(textToMatrix('FIEK'))
+  })
+
+  it('does not add parity twice', () => {
+    const store = useChartStore()
+    store.addParity()
+    store.addParity()
+    expect(store.width).toBe(9)
+    expect(store.past).toHaveLength(1)
+  })
+
+  it('removes parity as one undoable step', () => {
+    const store = useChartStore()
+    store.load(textToMatrix('FIEK'))
+    store.addParity()
+    store.removeParity()
+    expect(store.hasParity).toBe(false)
+    expect(store.matrix).toEqual(textToMatrix('FIEK'))
+  })
+
+  it('does nothing when removing parity from a chart without it', () => {
+    const store = useChartStore()
+    store.removeParity()
+    expect(store.width).toBe(8)
+    expect(store.canUndo).toBe(false)
+  })
+
+  it('restores the parity flag with undo and redo', () => {
+    const store = useChartStore()
+    store.addParity()
+    store.undo()
+    expect(store.hasParity).toBe(false)
+    expect(store.width).toBe(8)
+    store.redo()
+    expect(store.hasParity).toBe(true)
+    expect(store.width).toBe(9)
+
+    store.removeParity()
+    store.undo()
+    expect(store.hasParity).toBe(true)
+    store.redo()
+    expect(store.hasParity).toBe(false)
+  })
+
+  it('keeps the flag when stitches are toggled or the chart is cleared', () => {
+    const store = useChartStore()
+    store.addParity()
+    store.toggle(0, 0)
+    expect(store.hasParity).toBe(true)
+    store.clear()
+    expect(store.hasParity).toBe(true)
+  })
+
+  it('turns the flag off when another chart is loaded', () => {
+    const store = useChartStore()
+    store.addParity()
+    store.load(textToMatrix('F'))
+    expect(store.hasParity).toBe(false)
+  })
+
+  it('blocks resizing while parity is on', () => {
+    const store = useChartStore()
+    store.addParity()
+    expect(store.canResize).toBe(false)
+    store.resize(4, 4)
+    expect(store.width).toBe(9)
+    expect(store.height).toBe(9)
+  })
+
+  it('may grow past the size-control limit when adding parity', () => {
+    const store = useChartStore()
+    store.resize(MAX_WIDTH, 1)
+    store.addParity()
+    expect(store.width).toBe(MAX_WIDTH + 1)
+  })
+})

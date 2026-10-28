@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { chartToMatrix, createChart, matrixToChart, resizeChart, toggleCell } from '../core/chart'
 import type { FlatChart } from '../core/chart'
+import { addParity } from '../core/parity'
 import type { BitMatrix } from '../core/types'
 
 /** Size limits for the editor's width and height controls. */
@@ -10,6 +11,15 @@ export const MAX_HEIGHT = 200
 
 /** How many steps can be undone. Older steps are dropped. */
 export const HISTORY_LIMIT = 100
+
+/**
+ * One entry of the undo/redo history: a chart plus whether its last row and
+ * column are parity stitches. The flag is part of every step, so undoing
+ * "Add parity" also turns the flag off again.
+ */
+export interface ChartSnapshot extends FlatChart {
+  hasParity: boolean
+}
 
 /**
  * The chart currently open in the app (shared by the editor, and later the
@@ -28,14 +38,27 @@ export const HISTORY_LIMIT = 100
 export const useChartStore = defineStore('chart', {
   state: () => ({
     ...createChart(8, 8),
-    past: [] as FlatChart[],
-    future: [] as FlatChart[],
+    /** True when the last row and column were added by addParity. */
+    hasParity: false,
+    past: [] as ChartSnapshot[],
+    future: [] as ChartSnapshot[],
   }),
 
   getters: {
     matrix: (state): BitMatrix => chartToMatrix(state),
+    /** The chart without its parity row and column (the whole chart if there is no parity). */
+    dataMatrix(): BitMatrix {
+      if (!this.hasParity) return this.matrix
+      return this.matrix.slice(0, -1).map(row => row.slice(0, -1))
+    },
     canUndo: state => state.past.length > 0,
     canRedo: state => state.future.length > 0,
+    /**
+     * Resizing would move the parity row and column into the middle of the
+     * chart, where they no longer protect anything, so it is blocked while
+     * parity is on. Remove parity first, then resize.
+     */
+    canResize: state => !state.hasParity,
   },
 
   actions: {
@@ -44,13 +67,18 @@ export const useChartStore = defineStore('chart', {
     },
 
     resize(width: number, height: number) {
+      if (!this.canResize) return
       const w = clamp(width, MIN_SIZE, MAX_WIDTH)
       const h = clamp(height, MIN_SIZE, MAX_HEIGHT)
       if (w === this.width && h === this.height) return
       this.apply(resizeChart(this.current(), w, h))
     },
 
-    /** Sets every stitch to K. Does nothing (and adds no undo step) if it already is. */
+    /**
+     * Sets every stitch to K. Does nothing (and adds no undo step) if it
+     * already is. Keeps the parity flag: a chart of only K stitches has even
+     * parity everywhere, so it is still a valid parity-protected chart.
+     */
     clear() {
       if (this.cells.every(cell => cell === 0)) return
       this.apply(createChart(this.width, this.height))
@@ -58,7 +86,26 @@ export const useChartStore = defineStore('chart', {
 
     /** Replaces the chart, e.g. with one made on the encode page. Can be undone. */
     load(matrix: BitMatrix) {
-      this.apply(matrixToChart(matrix))
+      this.apply(matrixToChart(matrix), false)
+    },
+
+    /**
+     * Adds a parity column on the right and a parity row at the bottom
+     * (see core/parity.ts), as one undoable step. The chart grows by one in
+     * each direction, which may go past MAX_WIDTH / MAX_HEIGHT: those limits
+     * only apply to the size controls.
+     */
+    addParity() {
+      if (this.hasParity) return
+      this.apply(matrixToChart(addParity(this.matrix)), true)
+    },
+
+    /** Removes the parity row and column again, as one undoable step. */
+    removeParity() {
+      if (!this.hasParity) return
+      // resizeChart keeps the top-left part, so shrinking by one in each
+      // direction drops exactly the last row and the last column.
+      this.apply(resizeChart(this.current(), this.width - 1, this.height - 1), false)
     },
 
     undo() {
@@ -77,23 +124,28 @@ export const useChartStore = defineStore('chart', {
 
     // ---- internal helpers ----
 
-    current(): FlatChart {
-      return { width: this.width, height: this.height, cells: this.cells }
+    current(): ChartSnapshot {
+      return { width: this.width, height: this.height, cells: this.cells, hasParity: this.hasParity }
     },
 
-    /** Makes `next` the active chart and records the step for undo. */
-    apply(next: FlatChart) {
+    /**
+     * Makes `next` the active chart and records the step for undo.
+     * `hasParity` defaults to the current flag, so ordinary edits keep it.
+     */
+    apply(next: FlatChart, hasParity?: boolean) {
+      const nextHasParity = hasParity ?? this.hasParity
       this.past.push(this.current())
       if (this.past.length > HISTORY_LIMIT) this.past.shift()
       // A new edit starts a new branch of history, so the old "redo" steps are gone.
       this.future = []
-      this.show(next)
+      this.show({ ...next, hasParity: nextHasParity })
     },
 
-    show(chart: FlatChart) {
-      this.width = chart.width
-      this.height = chart.height
-      this.cells = chart.cells
+    show(snapshot: ChartSnapshot) {
+      this.width = snapshot.width
+      this.height = snapshot.height
+      this.cells = snapshot.cells
+      this.hasParity = snapshot.hasParity
     },
   },
 })

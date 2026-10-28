@@ -79,3 +79,21 @@ describe('checkParity', () => {
     expect(() => checkParity(twoErrors)).toThrow(/More than one error/)
   })
 })
+
+describe('checkParity – limits of 2D parity', () => {
+  const protectedChart = addParity(textToMatrix('FIEK'))
+
+  it('does not detect four flipped stitches at the corners of a rectangle (known limitation of 2D parity)', () => {
+    // Each affected row and each affected column has exactly two flips,
+    // so all parities stay even and the chart looks valid.
+    const fourErrors = flip(flip(flip(flip(protectedChart, 0, 1), 0, 5), 3, 1), 3, 5)
+    expect(fourErrors).not.toEqual(protectedChart)
+    expect(checkParity(fourErrors)).toBeNull()
+  })
+
+  it('cannot locate two flipped stitches in the same row (reports more than one error)', () => {
+    // Two odd columns but no odd row: the pattern of a single error is missing.
+    const twoInOneRow = flip(flip(protectedChart, 1, 2), 1, 6)
+    expect(() => checkParity(twoInOneRow)).toThrow(/More than one error/)
+  })
+})
