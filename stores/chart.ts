@@ -108,6 +108,17 @@ export const useChartStore = defineStore('chart', {
       this.apply(resizeChart(this.current(), this.width - 1, this.height - 1), false)
     },
 
+    /**
+     * Shows a chart restored from storage when the app opens. It replaces the
+     * current chart without an undo step and starts with an empty history,
+     * because the history is not saved.
+     */
+    restore(snapshot: ChartSnapshot) {
+      this.show(snapshot)
+      this.past = []
+      this.future = []
+    },
+
     undo() {
       const previous = this.past.pop()
       if (!previous) return
