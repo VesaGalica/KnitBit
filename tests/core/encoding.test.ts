@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { matrixToText, textToMatrix } from '../../core/encoding'
+import { matrixToText, textToBytes, textToMatrix } from '../../core/encoding'
 
 describe('textToMatrix', () => {
   it('encodes "F" as 01000110', () => {
@@ -40,5 +40,35 @@ describe('matrixToText', () => {
   it('throws on bytes that are not valid UTF-8', () => {
     // 0xC3 starts a two-byte character but nothing follows it.
     expect(() => matrixToText([[1, 1, 0, 0, 0, 0, 1, 1]])).toThrow()
+  })
+})
+
+describe('textToBytes', () => {
+  it('gives one entry per byte, in the same order as textToMatrix', () => {
+    const text = 'Noël'
+    const infos = textToBytes(text)
+    expect(infos).toHaveLength(textToMatrix(text).length)
+    expect(infos.map(info => info.byte)).toEqual([...new TextEncoder().encode(text)])
+  })
+
+  it('labels a one-byte character as part 1 of 1', () => {
+    expect(textToBytes('F')).toEqual([{ byte: 0x46, char: 'F', part: 1, parts: 1 }])
+  })
+
+  it('labels both bytes of "ë" with their position', () => {
+    expect(textToBytes('ë')).toEqual([
+      { byte: 0xc3, char: 'ë', part: 1, parts: 2 },
+      { byte: 0xab, char: 'ë', part: 2, parts: 2 },
+    ])
+  })
+
+  it('keeps a 4-byte character (emoji) together', () => {
+    const infos = textToBytes('🧶')
+    expect(infos).toHaveLength(4)
+    expect(infos.every(info => info.char === '🧶' && info.parts === 4)).toBe(true)
+  })
+
+  it('returns an empty list for the empty string', () => {
+    expect(textToBytes('')).toEqual([])
   })
 })

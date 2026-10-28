@@ -19,6 +19,38 @@ export function textToMatrix(text: string): BitMatrix {
   return Array.from(bytes, byteToRow)
 }
 
+/** One byte of the encoded text, with the character it belongs to. */
+export interface ByteInfo {
+  byte: number
+  /** The character this byte is part of, e.g. "ë". */
+  char: string
+  /** Position of this byte inside the character, starting at 1. */
+  part: number
+  /** How many bytes the character needs in UTF-8 (1 to 4). */
+  parts: number
+}
+
+/**
+ * Lists the UTF-8 bytes of a text together with the character each byte
+ * belongs to. The result has one entry per chart row, in the same order as
+ * textToMatrix, so the UI can label every row ("ë 1/2", "ë 2/2").
+ *
+ * The loop uses for...of, which walks the text by Unicode code point, so a
+ * character outside the basic range (e.g. an emoji, 4 bytes) stays one
+ * character instead of being split into two UTF-16 halves.
+ */
+export function textToBytes(text: string): ByteInfo[] {
+  const encoder = new TextEncoder()
+  const result: ByteInfo[] = []
+  for (const char of text) {
+    const bytes = encoder.encode(char)
+    bytes.forEach((byte, index) => {
+      result.push({ byte, char, part: index + 1, parts: bytes.length })
+    })
+  }
+  return result
+}
+
 /**
  * Decodes a knitting chart back to text (inverse of textToMatrix).
  *
