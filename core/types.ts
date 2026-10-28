@@ -1,7 +1,7 @@
 /**
  * Shared types for the core layer.
  *
- * One stitch is one bit: 0 = D (knit, "sy i drejtë"), 1 = P (purl, "sy i prapë").
+ * One stitch is one bit: 0 = K (knit stitch), 1 = P (purl stitch).
  */
 export type Bit = 0 | 1
 
