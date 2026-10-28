@@ -7,9 +7,10 @@ export default defineConfig({
       {
         // core/ is plain TypeScript, so its tests run in plain Node: fast,
         // and proof that the layer does not depend on Vue or Nuxt.
+        // The Pinia stores only need Pinia itself, so they run here too.
         test: {
           name: 'core',
-          include: ['tests/core/**/*.test.ts'],
+          include: ['tests/core/**/*.test.ts', 'tests/stores/**/*.test.ts'],
           environment: 'node',
         },
       },

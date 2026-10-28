@@ -82,3 +82,131 @@ body {
     --nav-height: 64px;
   }
 }
+
+/*
+ * Shared building blocks for the tab pages (encode, editor, ...).
+ * Kept global so every page looks the same without copying styles.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.page h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.page h2 {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+}
+
+.card {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.card__legend {
+  margin-bottom: var(--space-3);
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.field__input {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  /* 16px or more: iOS Safari zooms the page into any smaller input on focus. */
+  font-size: 16px;
+  resize: vertical;
+}
+
+.field__input:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.field__input--mono {
+  font-family: var(--font-mono);
+}
+
+.field__hint {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-accent);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.button:disabled {
+  border-color: var(--color-border);
+  color: var(--color-muted);
+  cursor: default;
+}
+
+.button--filled {
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+.errors {
+  margin: 0;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-6);
+  border-radius: 10px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 0.875rem;
+}
+
+.result {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  /* Keep spaces and line breaks of the decoded text visible. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

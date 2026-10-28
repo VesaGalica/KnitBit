@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import EncodePage from '../../app/pages/encode.vue'
+import { useChartStore } from '../../stores/chart'
+import { textToMatrix } from '../../core/encoding'
 
 describe('encode page', () => {
+  it('sends the encoded chart to the editor store with "Open in editor"', async () => {
+    const page = await mountSuspended(EncodePage)
+    await page.find('[data-test="text-input"]').setValue('FIEK')
+    await page.find('[data-test="open-in-editor"]').trigger('click')
+
+    const chart = useChartStore()
+    expect(chart.matrix).toEqual(textToMatrix('FIEK'))
+    expect(chart.canUndo).toBe(true)
+  })
+
   it('shows the chart and row patterns for typed text', async () => {
     const page = await mountSuspended(EncodePage)
     await page.find('[data-test="text-input"]').setValue('F')
