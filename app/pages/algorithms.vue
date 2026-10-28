@@ -1,3 +1,6 @@
 <template>
-  <PlaceholderPage page-key="algorithms" />
+  <PlaceholderPage
+    title="Algorithms"
+    description="Cellular automata and sorting algorithms"
+  />
 </template>

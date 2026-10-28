@@ -1,19 +1,18 @@
 <script setup lang="ts">
-// Shared layout for the four tabs until their real features exist.
-const props = defineProps<{ pageKey: 'encode' | 'editor' | 'algorithms' | 'knit' }>()
+// Shared layout for the tabs whose real features do not exist yet.
+const props = defineProps<{ title: string, description: string }>()
 
-const { t } = useI18n()
-useHead({ title: () => `${t(`pages.${props.pageKey}.title`)} · KnitBit` })
+useHead({ title: () => `${props.title} · KnitBit` })
 </script>
 
 <template>
   <section class="placeholder">
-    <h1>{{ $t(`pages.${pageKey}.title`) }}</h1>
+    <h1>{{ title }}</h1>
     <p class="placeholder__description">
-      {{ $t(`pages.${pageKey}.description`) }}
+      {{ description }}
     </p>
     <p class="placeholder__soon">
-      {{ $t('common.comingSoon') }}
+      Coming soon
     </p>
     <slot />
   </section>

@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-27',
 
-  modules: ['@pinia/nuxt', '@nuxtjs/i18n', '@vite-pwa/nuxt', '@nuxt/eslint'],
+  modules: ['@pinia/nuxt', '@vite-pwa/nuxt', '@nuxt/eslint'],
 
   // The app has no backend, so it is rendered entirely in the browser.
   // This keeps the offline behaviour simple: the service worker only has to
@@ -41,17 +41,6 @@ export default defineNuxtConfig({
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
       ],
     },
-  },
-
-  i18n: {
-    // English is the only language. i18n is kept so every UI string lives in
-    // one file (en.json) instead of being spread over the components.
-    defaultLocale: 'en',
-    strategy: 'no_prefix',
-    locales: [
-      { code: 'en', language: 'en-GB', name: 'English', file: 'en.json' },
-    ],
-    detectBrowserLanguage: false,
   },
 
   pwa: {

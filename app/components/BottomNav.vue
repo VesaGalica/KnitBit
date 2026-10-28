@@ -1,25 +1,28 @@
 <script setup lang="ts">
 interface NavItem {
   to: string
-  labelKey: string
+  label: string
   // SVG path data for a 24×24 stroke icon.
   icon: string
 }
 
 const items: NavItem[] = [
   // "0 1" – text becomes bits
-  { to: '/encode', labelKey: 'nav.encode', icon: 'M4 6h4v12H4zM14 6l3-2v14M14 18h6' },
+  { to: '/encode', label: 'Encode', icon: 'M4 6h4v12H4zM14 6l3-2v14M14 18h6' },
   // grid – the chart editor
-  { to: '/editor', labelKey: 'nav.editor', icon: 'M4 4h16v16H4zM4 10h16M4 15h16M9 4v16M15 4v16' },
+  { to: '/editor', label: 'Editor', icon: 'M4 4h16v16H4zM4 10h16M4 15h16M9 4v16M15 4v16' },
   // branching steps – algorithms
-  { to: '/algorithms', labelKey: 'nav.algorithms', icon: 'M6 4v6m0 0h12m-12 0v10m12-10v10M3 20h6m6 0h6' },
+  { to: '/algorithms', label: 'Algorithms', icon: 'M6 4v6m0 0h12m-12 0v10m12-10v10M3 20h6m6 0h6' },
   // needle and yarn – knit with me
-  { to: '/knit', labelKey: 'nav.knit', icon: 'M5 19L19 5M15 5h4v4M5 19c3-1 4-4 7-4s4 3 7 2' },
+  { to: '/knit', label: 'Knit', icon: 'M5 19L19 5M15 5h4v4M5 19c3-1 4-4 7-4s4 3 7 2' },
 ]
 </script>
 
 <template>
-  <nav class="bottom-nav" :aria-label="$t('nav.label')">
+  <nav
+    class="bottom-nav"
+    aria-label="Main navigation"
+  >
     <NuxtLink
       v-for="item in items"
       :key="item.to"
@@ -34,7 +37,7 @@ const items: NavItem[] = [
       >
         <path :d="item.icon" />
       </svg>
-      <span class="bottom-nav__label">{{ $t(item.labelKey) }}</span>
+      <span class="bottom-nav__label">{{ item.label }}</span>
     </NuxtLink>
   </nav>
 </template>

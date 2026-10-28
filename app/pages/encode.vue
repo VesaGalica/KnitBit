@@ -5,11 +5,14 @@ import { parseRow } from '~~/core/notation'
 import { rowToRLE } from '~~/core/rle'
 import type { BitMatrix } from '~~/core/types'
 
-const { t } = useI18n()
-useHead({ title: () => `${t('pages.encode.title')} · KnitBit` })
+useHead({ title: 'Encode · KnitBit' })
 
 type Mode = 'encode' | 'decode'
 const mode = ref<Mode>('encode')
+const modes: { value: Mode, label: string }[] = [
+  { value: 'encode', label: 'Text → Chart' },
+  { value: 'decode', label: 'Chart → Text' },
+]
 
 // ---- Text → Chart ----------------------------------------------------------
 
@@ -45,6 +48,7 @@ function visibleChar(char: string): string {
 // ---- Chart → Text ----------------------------------------------------------
 
 const rowsInput = ref('')
+const rowsPlaceholder = '01000110\nK1, P1, K3, P2, K1'
 
 const decoded = computed(() => {
   const rows: BitMatrix = []
@@ -56,16 +60,13 @@ const decoded = computed(() => {
       const row = parseRow(line)
       // Checked here (not only in matrixToText) so the message names the line.
       if (row.length !== BITS_PER_BYTE) {
-        errors.push(t('encode.decode.lineError', {
-          line: index + 1,
-          message: t('encode.decode.wrongLength', { count: row.length }),
-        }))
+        errors.push(`Line ${index + 1}: a row needs exactly ${BITS_PER_BYTE} stitches, this one has ${row.length}.`)
         return
       }
       rows.push(row)
     }
     catch (error) {
-      errors.push(t('encode.decode.lineError', { line: index + 1, message: (error as Error).message }))
+      errors.push(`Line ${index + 1}: ${(error as Error).message}`)
     }
   })
 
@@ -75,7 +76,7 @@ const decoded = computed(() => {
   }
   catch {
     // Every row has 8 stitches, so the only remaining failure is invalid UTF-8.
-    return { rows, text: null, errors: [t('encode.decode.invalidUtf8')] }
+    return { rows, text: null, errors: ['These rows are not valid UTF-8 text. Check for a wrong stitch.'] }
   }
 })
 
@@ -88,32 +89,32 @@ function useEncodedChart() {
 
 <template>
   <section class="encode">
-    <h1>{{ $t('pages.encode.title') }}</h1>
+    <h1>Encode</h1>
 
     <div
       class="segmented"
       role="tablist"
-      :aria-label="$t('encode.modes.label')"
+      aria-label="Direction"
     >
       <button
-        v-for="option in (['encode', 'decode'] as const)"
-        :key="option"
+        v-for="option in modes"
+        :key="option.value"
         type="button"
         role="tab"
         class="segmented__option"
-        :class="{ 'segmented__option--active': mode === option }"
-        :aria-selected="mode === option"
-        :data-mode="option"
-        @click="mode = option"
+        :class="{ 'segmented__option--active': mode === option.value }"
+        :aria-selected="mode === option.value"
+        :data-mode="option.value"
+        @click="mode = option.value"
       >
-        {{ $t(`encode.modes.${option}`) }}
+        {{ option.label }}
       </button>
     </div>
 
     <!-- Text → Chart -->
     <template v-if="mode === 'encode'">
       <label class="field">
-        <span class="field__label">{{ $t('encode.text.label') }}</span>
+        <span class="field__label">Text</span>
         <textarea
           v-model="text"
           class="field__input"
@@ -123,13 +124,13 @@ function useEncodedChart() {
           autocapitalize="off"
           autocomplete="off"
           spellcheck="false"
-          :placeholder="$t('encode.text.placeholder')"
+          placeholder="Type a word, e.g. FIEK"
         />
         <span
           v-if="text"
           class="field__hint"
         >
-          {{ $t('encode.text.stats', { chars: charCount, rows: matrix.length }) }}
+          {{ charCount }} characters → {{ matrix.length }} rows of 8 stitches
         </span>
       </label>
 
@@ -137,31 +138,31 @@ function useEncodedChart() {
         v-if="matrix.length === 0"
         class="empty"
       >
-        {{ $t('encode.chart.empty') }}
+        Type some text to see its chart.
       </p>
 
       <template v-else>
         <div class="card">
           <div class="card__header">
-            <h2>{{ $t('encode.chart.title') }}</h2>
-            <span class="card__legend">{{ $t('encode.chart.legend') }}</span>
+            <h2>Chart</h2>
+            <span class="card__legend">K = knit (0) · P = purl (1)</span>
           </div>
           <ChartSvg
             :matrix="matrix"
             :row-labels="rowLabels"
-            :label="$t('encode.chart.aria', { rows: matrix.length })"
+            :label="`Knitting chart with ${matrix.length} rows of 8 stitches`"
           />
         </div>
 
         <div class="card">
-          <h2>{{ $t('encode.instructions.title') }}</h2>
+          <h2>Row by row</h2>
           <ol class="instructions">
             <li
               v-for="item in instructions"
               :key="item.number"
               class="instructions__row"
             >
-              <span class="instructions__number">{{ $t('encode.instructions.row', { n: item.number }) }}</span>
+              <span class="instructions__number">Row {{ item.number }}</span>
               <span class="instructions__char">{{ item.label }}</span>
               <span
                 class="instructions__pattern"
@@ -175,7 +176,7 @@ function useEncodedChart() {
             data-test="use-encoded"
             @click="useEncodedChart"
           >
-            {{ $t('encode.decode.useEncoded') }}
+            Use the chart from Text → Chart
           </button>
         </div>
       </template>
@@ -184,7 +185,7 @@ function useEncodedChart() {
     <!-- Chart → Text -->
     <template v-else>
       <label class="field">
-        <span class="field__label">{{ $t('encode.decode.label') }}</span>
+        <span class="field__label">Rows</span>
         <textarea
           v-model="rowsInput"
           class="field__input field__input--mono"
@@ -193,9 +194,9 @@ function useEncodedChart() {
           autocapitalize="characters"
           autocomplete="off"
           spellcheck="false"
-          :placeholder="$t('encode.decode.placeholder')"
+          :placeholder="rowsPlaceholder"
         />
-        <span class="field__hint">{{ $t('encode.decode.hint') }}</span>
+        <span class="field__hint">One row per line: 8 digits (0 = knit, 1 = purl) or a pattern such as K1, P1, K3, P2, K1.</span>
       </label>
 
       <ul
@@ -215,14 +216,14 @@ function useEncodedChart() {
         v-else-if="decoded.rows.length === 0"
         class="empty"
       >
-        {{ $t('encode.decode.empty') }}
+        Enter rows to decode them.
       </p>
 
       <div
         v-else
         class="card"
       >
-        <h2>{{ $t('encode.decode.result') }}</h2>
+        <h2>Decoded text</h2>
         <p
           class="result"
           data-test="decoded-text"
@@ -235,10 +236,10 @@ function useEncodedChart() {
         v-if="decoded.rows.length > 0"
         class="card"
       >
-        <h2>{{ $t('encode.chart.title') }}</h2>
+        <h2>Chart</h2>
         <ChartSvg
           :matrix="decoded.rows"
-          :label="$t('encode.chart.aria', { rows: decoded.rows.length })"
+          :label="`Knitting chart with ${decoded.rows.length} rows of 8 stitches`"
         />
       </div>
     </template>
