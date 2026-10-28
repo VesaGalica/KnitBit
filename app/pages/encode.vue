@@ -4,8 +4,11 @@ import type { ByteInfo } from '~~/core/encoding'
 import { parseRow } from '~~/core/notation'
 import { rowToRLE } from '~~/core/rle'
 import type { BitMatrix } from '~~/core/types'
+import { useChartStore } from '~~/stores/chart'
 
 useHead({ title: 'Encode · KnitBit' })
+
+const chart = useChartStore()
 
 type Mode = 'encode' | 'decode'
 const mode = ref<Mode>('encode')
@@ -23,26 +26,19 @@ const matrix = computed(() => textToMatrix(text.value))
 const charCount = computed(() => [...text.value].length)
 const rowLabels = computed(() => bytes.value.map(labelFor))
 
-const instructions = computed(() =>
-  matrix.value.map((row, index) => ({
-    number: index + 1,
-    label: rowLabels.value[index]!,
-    pattern: rowToRLE(row),
-  })),
-)
-
-/** "F" for a one-byte character, "ë 1/2" and "ë 2/2" for the two rows of "ë". */
+/**
+ * "F" for a one-byte character, "ë 1/2" and "ë 2/2" for the two rows of "ë".
+ * visibleChar (app/utils) gives invisible characters a symbol, e.g. space → ␣.
+ */
 function labelFor(info: ByteInfo): string {
   const char = visibleChar(info.char)
   return info.parts > 1 ? `${char} ${info.part}/${info.parts}` : char
 }
 
-/** Invisible characters get a symbol so their rows are not unlabelled. */
-function visibleChar(char: string): string {
-  if (char === ' ') return '␣'
-  if (char === '\n') return '↵'
-  if (char === '\t') return '⇥'
-  return char
+/** Puts the encoded chart into the editor (as an undoable step) and opens it. */
+async function openInEditor() {
+  chart.load(matrix.value)
+  await navigateTo('/editor')
 }
 
 // ---- Chart → Text ----------------------------------------------------------
@@ -88,7 +84,7 @@ function useEncodedChart() {
 </script>
 
 <template>
-  <section class="encode">
+  <section class="page">
     <h1>Encode</h1>
 
     <div
@@ -156,20 +152,21 @@ function useEncodedChart() {
 
         <div class="card">
           <h2>Row by row</h2>
-          <ol class="instructions">
-            <li
-              v-for="item in instructions"
-              :key="item.number"
-              class="instructions__row"
-            >
-              <span class="instructions__number">Row {{ item.number }}</span>
-              <span class="instructions__char">{{ item.label }}</span>
-              <span
-                class="instructions__pattern"
-                data-test="pattern"
-              >{{ item.pattern }}</span>
-            </li>
-          </ol>
+          <RowInstructions
+            :matrix="matrix"
+            :row-labels="rowLabels"
+          />
+        </div>
+
+        <div class="actions">
+          <button
+            type="button"
+            class="button button--filled"
+            data-test="open-in-editor"
+            @click="openInEditor"
+          >
+            Open in editor
+          </button>
           <button
             type="button"
             class="button"
@@ -224,12 +221,11 @@ function useEncodedChart() {
         class="card"
       >
         <h2>Decoded text</h2>
+        <!-- On one line: .result keeps whitespace, so no spaces around the text. -->
         <p
           class="result"
           data-test="decoded-text"
-        >
-          {{ decoded.text }}
-        </p>
+        >{{ visibleText(decoded.text ?? '') }}</p>
       </div>
 
       <div
@@ -247,21 +243,7 @@ function useEncodedChart() {
 </template>
 
 <style scoped>
-.encode {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-h1 {
-  margin: 0;
-  font-size: 1.75rem;
-}
-
-h2 {
-  margin: 0 0 var(--space-3);
-  font-size: 1rem;
-}
+/* Page-specific styles only; cards, fields and buttons come from main.css. */
 
 .segmented {
   display: grid;
@@ -290,125 +272,9 @@ h2 {
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
 }
 
-.field {
+.actions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-}
-
-.field__label {
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.field__input {
-  width: 100%;
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  /* 16px or more: iOS Safari zooms the page into any smaller input on focus. */
-  font-size: 16px;
-  resize: vertical;
-}
-
-.field__input:focus {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
-}
-
-.field__input--mono {
-  font-family: var(--font-mono);
-}
-
-.field__hint {
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-}
-
-.empty {
-  margin: 0;
-  color: var(--color-muted);
-}
-
-.card {
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
-}
-
-.card__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
   gap: var(--space-2);
-}
-
-.card__legend {
-  margin-bottom: var(--space-3);
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-}
-
-.instructions {
-  margin: 0 0 var(--space-4);
-  padding: 0;
-  list-style: none;
-}
-
-.instructions__row {
-  display: grid;
-  grid-template-columns: 4.5rem 3.5rem 1fr;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border);
-  font-size: 0.9375rem;
-}
-
-.instructions__row:last-child {
-  border-bottom: 0;
-}
-
-.instructions__number {
-  color: var(--color-muted);
-}
-
-.instructions__char,
-.instructions__pattern {
-  font-family: var(--font-mono);
-}
-
-.button {
-  width: 100%;
-  min-height: 44px;
-  border: 1px solid var(--color-accent);
-  border-radius: 10px;
-  background: transparent;
-  color: var(--color-accent);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.errors {
-  margin: 0;
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-6);
-  border-radius: 10px;
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  font-size: 0.875rem;
-}
-
-.result {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  /* Keep spaces and line breaks of the decoded text visible. */
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 </style>

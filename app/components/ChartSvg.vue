@@ -7,12 +7,25 @@ import type { BitMatrix } from '~~/core/types'
  * right (used for the character a byte belongs to).
  *
  * Sizes are in viewBox units, so the chart scales to the screen width.
+ *
+ * With `editable`, every stitch is a button: tapping it (or Enter/Space when
+ * it has keyboard focus) emits `toggle` with its row and column. The chart
+ * does not change itself; the parent decides what a toggle does.
  */
 const props = defineProps<{
   matrix: BitMatrix
   rowLabels?: string[]
   label: string
+  editable?: boolean
 }>()
+
+const emit = defineEmits<{
+  toggle: [row: number, col: number]
+}>()
+
+function cellLabel(row: number, col: number, bit: number): string {
+  return `Row ${row + 1}, stitch ${col + 1}: ${bit === 1 ? 'purl' : 'knit'}`
+}
 
 const CELL = 24
 const LEFT = 28 // row numbers
@@ -29,7 +42,7 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
     class="chart"
     :viewBox="`0 0 ${width} ${height}`"
     :style="{ maxWidth: `${width * 1.5}px` }"
-    role="img"
+    :role="editable ? 'group' : 'img'"
     :aria-label="label"
   >
     <g
@@ -47,11 +60,20 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
       <rect
         v-for="(bit, c) in row"
         :key="c"
-        :class="bit === 1 ? 'chart__cell chart__cell--p' : 'chart__cell chart__cell--k'"
+        :class="[
+          'chart__cell',
+          bit === 1 ? 'chart__cell--p' : 'chart__cell--k',
+          { 'chart__cell--editable': editable },
+        ]"
         :x="LEFT + c * CELL"
         y="0"
         :width="CELL"
         :height="CELL"
+        :role="editable ? 'button' : undefined"
+        :tabindex="editable ? 0 : undefined"
+        :aria-label="editable ? cellLabel(r, c, bit) : undefined"
+        @click="editable && emit('toggle', r, c)"
+        @keydown.enter.space.prevent="editable && emit('toggle', r, c)"
       />
       <text
         v-if="rowLabels"
@@ -82,6 +104,23 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
 
 .chart__cell--p {
   fill: var(--color-stitch-p);
+}
+
+.chart__cell--editable {
+  cursor: pointer;
+  /* No double-tap zoom on the chart, so quick taps on two cells both count. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* No browser focus ring after a tap; keyboard focus gets an accent border instead. */
+.chart__cell--editable:focus {
+  outline: none;
+}
+
+.chart__cell--editable:focus-visible {
+  stroke: var(--color-accent);
+  stroke-width: 3;
 }
 
 .chart__number,

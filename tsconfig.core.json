@@ -17,5 +17,5 @@
     // TextEncoder/TextDecoder are typed through Node's globals here.
     "types": ["node"]
   },
-  "include": ["core/**/*.ts", "stores/**/*.ts", "tests/core/**/*.ts"]
+  "include": ["core/**/*.ts", "stores/**/*.ts", "tests/core/**/*.ts", "tests/stores/**/*.ts"]
 }
