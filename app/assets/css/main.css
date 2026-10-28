@@ -52,8 +52,12 @@
     --color-success: #7fcf9c;
     --color-success-soft: #1e3326;
 
+    /* P is a mid warm grey so it stands out from both the dark card and the
+       light K stitches. WCAG contrast (minimum 3:1 for graphics):
+       P vs card #252321 = 4.01:1, P vs K #f1ece5 = 3.33:1.
+       The previous #3a3633 was only 1.31:1 against the card. */
     --color-stitch-k: #f1ece5;
-    --color-stitch-p: #3a3633;
+    --color-stitch-p: #8a7f75;
   }
 }
 
