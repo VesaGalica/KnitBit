@@ -168,3 +168,13 @@ describe('editor page – parity', () => {
     expect(page.find('[data-test="add-parity"]').exists()).toBe(true)
   })
 })
+
+describe('editor page – repeats', () => {
+  it('shows a repeating row in the shorter repeated form', async () => {
+    // Row 1 = K2, P2, K2, P2 (0011 0011).
+    useChartStore().load([[0, 0, 1, 1, 0, 0, 1, 1], [0, 1, 0, 0, 0, 1, 1, 0]])
+    const page = await mountSuspended(EditorPage)
+    const patterns = page.findAll('[data-test="pattern"]').map(p => p.text())
+    expect(patterns).toEqual(['[K2, P2] x2', 'K1, P1, K3, P2, K1'])
+  })
+})

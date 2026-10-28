@@ -25,6 +25,31 @@ export function rowToRLE(row: BitRow): string {
 }
 
 /**
+ * Like rowToRLE, but writes a row that is one group of stitches repeated
+ * the way knitting patterns do: [0, 0, 1, 1, 0, 0, 1, 1] → "[K2, P2] x2".
+ *
+ * It looks for the shortest group that, repeated a whole number of times
+ * (at least twice), gives exactly the row. A group of only one stitch type
+ * is skipped, because plain RLE already says it shorter ("K8", not
+ * "[K1] x8"). If no such group exists, for example when the pattern does
+ * not fit the row evenly ([0, 1, 0, 1, 0]), the plain rowToRLE result is
+ * returned.
+ */
+export function rowToRepeatedRLE(row: BitRow): string {
+  const length = row.length
+  // Groups longer than half the row cannot repeat twice.
+  for (let size = 1; size <= length / 2; size++) {
+    if (length % size !== 0) continue
+    const group = row.slice(0, size)
+    if (!group.includes(0) || !group.includes(1)) continue
+    if (row.every((bit, index) => bit === group[index % size])) {
+      return `[${rowToRLE(group)}] x${length / size}`
+    }
+  }
+  return rowToRLE(row)
+}
+
+/**
  * "K2, P2, K2, P2" → [0, 0, 1, 1, 0, 0, 1, 1] (inverse of rowToRLE)
  *
  * Accepts lower case and extra spaces ("k2,p2" works too), because people
