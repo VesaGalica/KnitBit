@@ -14,6 +14,8 @@
   --color-border: #e6e0d6;
   --color-accent: #b4473a;
   --color-accent-soft: #f6e3df;
+  --color-success: #2f7a4f;
+  --color-success-soft: #e3f2e8;
 
   /* Chart cells: K (knit) = 0, P (purl) = 1. */
   --color-stitch-k: #ffffff;
@@ -47,9 +49,15 @@
     --color-border: #3a3633;
     --color-accent: #e87c6c;
     --color-accent-soft: #3d2622;
+    --color-success: #7fcf9c;
+    --color-success-soft: #1e3326;
 
+    /* P is a mid warm grey so it stands out from both the dark card and the
+       light K stitches. WCAG contrast (minimum 3:1 for graphics):
+       P vs card #252321 = 4.01:1, P vs K #f1ece5 = 3.33:1.
+       The previous #3a3633 was only 1.31:1 against the card. */
     --color-stitch-k: #f1ece5;
-    --color-stitch-p: #3a3633;
+    --color-stitch-p: #8a7f75;
   }
 }
 

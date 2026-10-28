@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { rowToRLE } from '~~/core/rle'
-import type { BitMatrix } from '~~/core/types'
+import { rowToRepeatedRLE, rowToRLE } from '~~/core/rle'
+import type { BitMatrix, BitRow } from '~~/core/types'
 
 /**
  * "Row by row" list: the K/P pattern of every row, e.g. "Row 1  F  K1, P1, K3, P2, K1".
@@ -15,9 +15,19 @@ const rows = computed(() =>
   props.matrix.map((row, index) => ({
     number: index + 1,
     label: props.rowLabels?.[index] ?? '',
-    pattern: rowToRLE(row),
+    pattern: shortestPattern(row),
   })),
 )
+
+/**
+ * The repeated form ("[K2, P2] x2") when it is shorter to read than the
+ * plain one ("K2, P2, K2, P2"), otherwise the plain one.
+ */
+function shortestPattern(row: BitRow): string {
+  const plain = rowToRLE(row)
+  const repeated = rowToRepeatedRLE(row)
+  return repeated.length < plain.length ? repeated : plain
+}
 </script>
 
 <template>

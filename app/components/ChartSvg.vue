@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CellPosition } from '~~/core/parity'
 import type { BitMatrix } from '~~/core/types'
 
 /**
@@ -11,20 +12,37 @@ import type { BitMatrix } from '~~/core/types'
  * With `editable`, every stitch is a button: tapping it (or Enter/Space when
  * it has keyboard focus) emits `toggle` with its row and column. The chart
  * does not change itself; the parent decides what a toggle does.
+ *
+ * With `parity`, the last row and column are drawn as parity stitches
+ * (tinted, dashed border). `highlight` marks one stitch, e.g. the one a
+ * parity check found to be wrong.
  */
 const props = defineProps<{
   matrix: BitMatrix
   rowLabels?: string[]
   label: string
   editable?: boolean
+  parity?: boolean
+  highlight?: CellPosition | null
 }>()
 
 const emit = defineEmits<{
   toggle: [row: number, col: number]
 }>()
 
+function isParityCell(row: number, col: number): boolean {
+  return !!props.parity && (row === props.matrix.length - 1 || col === columns.value - 1)
+}
+
+function isHighlighted(row: number, col: number): boolean {
+  return props.highlight?.row === row && props.highlight?.col === col
+}
+
 function cellLabel(row: number, col: number, bit: number): string {
-  return `Row ${row + 1}, stitch ${col + 1}: ${bit === 1 ? 'purl' : 'knit'}`
+  const stitch = bit === 1 ? 'purl' : 'knit'
+  const parity = isParityCell(row, col) ? ' (parity)' : ''
+  const wrong = isHighlighted(row, col) ? ', wrong' : ''
+  return `Row ${row + 1}, stitch ${col + 1}: ${stitch}${parity}${wrong}`
 }
 
 const CELL = 24
@@ -63,7 +81,11 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
         :class="[
           'chart__cell',
           bit === 1 ? 'chart__cell--p' : 'chart__cell--k',
-          { 'chart__cell--editable': editable },
+          {
+            'chart__cell--editable': editable,
+            'chart__cell--parity': isParityCell(r, c),
+            'chart__cell--wrong': isHighlighted(r, c),
+          },
         ]"
         :x="LEFT + c * CELL"
         y="0"
@@ -83,6 +105,35 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
         dominant-baseline="central"
       >{{ rowLabels[r] }}</text>
     </g>
+
+    <!-- Drawn after all stitches so they sit on top; they never catch taps. -->
+    <g
+      v-if="parity && matrix.length > 0"
+      class="chart__overlay"
+    >
+      <rect
+        class="chart__parity-tint"
+        :x="LEFT + (columns - 1) * CELL"
+        :y="PAD"
+        :width="CELL"
+        :height="matrix.length * CELL"
+      />
+      <rect
+        class="chart__parity-tint"
+        :x="LEFT"
+        :y="PAD + (matrix.length - 1) * CELL"
+        :width="(columns - 1) * CELL"
+        :height="CELL"
+      />
+    </g>
+    <rect
+      v-if="highlight"
+      class="chart__overlay chart__highlight"
+      :x="LEFT + highlight.col * CELL + 2"
+      :y="PAD + highlight.row * CELL + 2"
+      :width="CELL - 4"
+      :height="CELL - 4"
+    />
   </svg>
 </template>
 
@@ -111,6 +162,26 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
   /* No double-tap zoom on the chart, so quick taps on two cells both count. */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+.chart__cell--parity {
+  stroke: var(--color-accent);
+  stroke-dasharray: 3 2;
+}
+
+.chart__overlay {
+  pointer-events: none;
+}
+
+.chart__parity-tint {
+  fill: var(--color-accent);
+  fill-opacity: 0.18;
+}
+
+.chart__highlight {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 4;
 }
 
 /* No browser focus ring after a tap; keyboard focus gets an accent border instead. */
