@@ -9,7 +9,7 @@ export const BITS_PER_BYTE = 8
  * The text is first converted to UTF-8 bytes, then every byte becomes one
  * row of 8 stitches, most significant bit first. UTF-8 (and not, for example,
  * Latin-1) is used because it is the web standard and it covers every
- * character; Albanian letters such as "ë" and "ç" simply take two bytes,
+ * character; letters such as "ë" and "ç" simply take two bytes,
  * i.e. two rows.
  *
  * Example: "F" = 0x46 = 01000110 → [[0, 1, 0, 0, 0, 1, 1, 0]]

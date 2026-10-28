@@ -3,12 +3,12 @@ import { rleToRow, rowToRLE } from '../../core/rle'
 import type { BitRow } from '../../core/types'
 
 describe('rowToRLE', () => {
-  it('writes [0,0,1,1,0,0,1,1] as "D2, P2, D2, P2"', () => {
-    expect(rowToRLE([0, 0, 1, 1, 0, 0, 1, 1])).toBe('D2, P2, D2, P2')
+  it('writes [0,0,1,1,0,0,1,1] as "K2, P2, K2, P2"', () => {
+    expect(rowToRLE([0, 0, 1, 1, 0, 0, 1, 1])).toBe('K2, P2, K2, P2')
   })
 
   it('handles a single-cell row', () => {
-    expect(rowToRLE([0])).toBe('D1')
+    expect(rowToRLE([0])).toBe('K1')
     expect(rowToRLE([1])).toBe('P1')
   })
 
@@ -22,16 +22,16 @@ describe('rowToRLE', () => {
 })
 
 describe('rleToRow', () => {
-  it('reverses "D2, P2, D2, P2"', () => {
-    expect(rleToRow('D2, P2, D2, P2')).toEqual([0, 0, 1, 1, 0, 0, 1, 1])
+  it('reverses "K2, P2, K2, P2"', () => {
+    expect(rleToRow('K2, P2, K2, P2')).toEqual([0, 0, 1, 1, 0, 0, 1, 1])
   })
 
   it('accepts lower case and missing or extra spaces', () => {
-    expect(rleToRow('  d2,p1 ,  D1 ')).toEqual([0, 0, 1, 0])
+    expect(rleToRow('  k2,p1 ,  K1 ')).toEqual([0, 0, 1, 0])
   })
 
   it('handles counts with more than one digit', () => {
-    expect(rleToRow('D12')).toHaveLength(12)
+    expect(rleToRow('K12')).toHaveLength(12)
   })
 
   it('returns an empty row for an empty string', () => {
@@ -39,7 +39,7 @@ describe('rleToRow', () => {
     expect(rleToRow('   ')).toEqual([])
   })
 
-  it.each(['X2', 'D', '2D', 'D2 P2', 'D2,,P2', 'D0', 'D-1'])('rejects "%s"', (input) => {
+  it.each(['X2', 'D2', 'K', '2K', 'K2 P2', 'K2,,P2', 'K0', 'K-1'])('rejects "%s"', (input) => {
     expect(() => rleToRow(input)).toThrow(/Invalid stitch group/)
   })
 })

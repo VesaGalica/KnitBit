@@ -19,13 +19,13 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      htmlAttrs: { lang: 'sq' },
+      htmlAttrs: { lang: 'en' },
       title: 'KnitBit',
       meta: [
         // viewport-fit=cover lets the app draw under the notch; the CSS then
         // pushes content back in with env(safe-area-inset-*).
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-        { name: 'description', content: 'Thurja si sistem për paraqitjen binare dhe modelimin e algoritmeve' },
+        { name: 'description', content: 'Knitting as a system for binary representation and modelling of algorithms' },
         // iOS "Add to Home Screen" behaviour.
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'mobile-web-app-capable', content: 'yes' },
@@ -44,16 +44,13 @@ export default defineNuxtConfig({
   },
 
   i18n: {
-    defaultLocale: 'sq',
-    // URLs stay the same for both languages.
+    // English is the only language. i18n is kept so every UI string lives in
+    // one file (en.json) instead of being spread over the components.
+    defaultLocale: 'en',
     strategy: 'no_prefix',
     locales: [
-      { code: 'sq', language: 'sq-AL', name: 'Shqip', file: 'sq.json' },
       { code: 'en', language: 'en-GB', name: 'English', file: 'en.json' },
     ],
-    // Browser detection is off on purpose: the app always opens in Albanian,
-    // even on a phone set to English. Remembering a manual language choice
-    // comes with the language switcher in a later phase.
     detectBrowserLanguage: false,
   },
 
@@ -62,8 +59,8 @@ export default defineNuxtConfig({
     manifest: {
       name: 'KnitBit',
       short_name: 'KnitBit',
-      description: 'Thurja si sistem për paraqitjen binare dhe modelimin e algoritmeve',
-      lang: 'sq',
+      description: 'Knitting as a system for binary representation and modelling of algorithms',
+      lang: 'en',
       start_url: '/',
       scope: '/',
       display: 'standalone',

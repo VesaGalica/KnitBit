@@ -25,7 +25,7 @@ describe('textToMatrix', () => {
 })
 
 describe('matrixToText', () => {
-  it.each(['Përshëndetje', 'FIEK', 'çë', 'Ç Ë', 'a'])('round trips "%s"', (text) => {
+  it.each(['Noël', 'façade', 'FIEK', 'Ç Ë', 'a'])('round trips "%s"', (text) => {
     expect(matrixToText(textToMatrix(text))).toBe(text)
   })
 

@@ -15,8 +15,8 @@
   --color-accent: #b4473a;
   --color-accent-soft: #f6e3df;
 
-  /* Chart cells: D (knit) = 0, P (purl) = 1. */
-  --color-stitch-d: #ffffff;
+  /* Chart cells: K (knit) = 0, P (purl) = 1. */
+  --color-stitch-k: #ffffff;
   --color-stitch-p: #1f1d1b;
 
   --space-1: 0.25rem;
@@ -48,7 +48,7 @@
     --color-accent: #e87c6c;
     --color-accent-soft: #3d2622;
 
-    --color-stitch-d: #f1ece5;
+    --color-stitch-k: #f1ece5;
     --color-stitch-p: #3a3633;
   }
 }

@@ -2,13 +2,13 @@ import type { Bit, BitRow } from './types'
 
 /**
  * Run-length encoding of a chart row, written the way knitting patterns are:
- * "D2, P2" means "knit 2, purl 2". 0 = D (knit), 1 = P (purl).
+ * "K2, P2" means "knit 2, purl 2". 0 = K (knit), 1 = P (purl).
  */
 
-const SYMBOL: Record<Bit, string> = { 0: 'D', 1: 'P' }
+const SYMBOL: Record<Bit, string> = { 0: 'K', 1: 'P' }
 
 /**
- * [0, 0, 1, 1, 0, 0, 1, 1] → "D2, P2, D2, P2"
+ * [0, 0, 1, 1, 0, 0, 1, 1] → "K2, P2, K2, P2"
  * An empty row gives an empty string.
  */
 export function rowToRLE(row: BitRow): string {
@@ -25,9 +25,9 @@ export function rowToRLE(row: BitRow): string {
 }
 
 /**
- * "D2, P2, D2, P2" → [0, 0, 1, 1, 0, 0, 1, 1] (inverse of rowToRLE)
+ * "K2, P2, K2, P2" → [0, 0, 1, 1, 0, 0, 1, 1] (inverse of rowToRLE)
  *
- * Accepts lower case and extra spaces ("d2,p2" works too), because people
+ * Accepts lower case and extra spaces ("k2,p2" works too), because people
  * will type this by hand. Anything else throws, with the bad part in the
  * message, so the UI can show the user what to fix.
  */
@@ -37,11 +37,11 @@ export function rleToRow(rle: string): BitRow {
 
   const row: BitRow = []
   for (const part of trimmed.split(',')) {
-    const match = /^([DP])(\d+)$/i.exec(part.trim())
+    const match = /^([KP])(\d+)$/i.exec(part.trim())
     if (!match) {
-      throw new Error(`Invalid stitch group "${part.trim()}", expected e.g. "D3" or "P2".`)
+      throw new Error(`Invalid stitch group "${part.trim()}", expected e.g. "K3" or "P2".`)
     }
-    const bit: Bit = match[1]!.toUpperCase() === 'D' ? 0 : 1
+    const bit: Bit = match[1]!.toUpperCase() === 'K' ? 0 : 1
     const count = Number(match[2])
     if (count === 0) {
       throw new Error(`Invalid stitch group "${part.trim()}", the count must be at least 1.`)
