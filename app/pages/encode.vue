@@ -245,33 +245,6 @@ function useEncodedChart() {
 <style scoped>
 /* Page-specific styles only; cards, fields and buttons come from main.css. */
 
-.segmented {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 3px;
-  border-radius: 10px;
-  background: var(--color-border);
-}
-
-.segmented__option {
-  min-height: 40px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-muted);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.segmented__option--active {
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
-}
-
 .actions {
   display: flex;
   flex-direction: column;
