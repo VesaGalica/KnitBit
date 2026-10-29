@@ -55,6 +55,18 @@ describe('editor page', () => {
     expect(page.find('[data-test="editor-text"]').text()).toBe('G')
   })
 
+  it('shows control characters dimmed, apart from the real text', async () => {
+    // "F", then a row of K stitches (byte 0), then "I".
+    useChartStore().load([...textToMatrix('F'), [0, 0, 0, 0, 0, 0, 0, 0], ...textToMatrix('I')])
+    const page = await mountSuspended(EditorPage)
+
+    const text = page.find('[data-test="editor-text"]')
+    expect(text.text()).toBe('F␀I')
+    const controls = text.findAll('[data-test="control-char"]')
+    expect(controls.map(c => c.text())).toEqual(['␀'])
+    expect(controls[0]!.classes()).toContain('control')
+  })
+
   it('says so when the rows are not valid UTF-8', async () => {
     // The first byte of "ë" alone is not a complete character.
     useChartStore().load(textToMatrix('ë').slice(0, 1))
@@ -127,10 +139,27 @@ describe('editor page – parity', () => {
 
     await cellAt(page, 2, 4).trigger('click')
     expect(page.findAll('.chart__cell--wrong')).toHaveLength(0)
-    expect(page.find('[data-test="parity-result"]').exists()).toBe(false)
+    const result = page.find('[data-test="parity-result"]')
+    expect(result.text()).toBe('Fixed – parity is correct again.')
+    expect(result.classes()).toContain('parity__result--fixed')
 
+    // A new check agrees, and the next edit clears the message as before.
     await page.find('[data-test="check-parity"]').trigger('click')
     expect(page.find('[data-test="parity-result"]').text()).toContain('Parity is correct')
+    await cellAt(page, 0, 0).trigger('click')
+    expect(page.find('[data-test="parity-result"]').exists()).toBe(false)
+  })
+
+  it('does not say "fixed" when a different stitch is tapped', async () => {
+    useChartStore().load(textToMatrix('FIEK'))
+    const page = await mountSuspended(EditorPage)
+    await page.find('[data-test="add-parity"]').trigger('click')
+    await cellAt(page, 2, 4).trigger('click')
+    await page.find('[data-test="check-parity"]').trigger('click')
+
+    await cellAt(page, 1, 1).trigger('click')
+    expect(page.find('[data-test="parity-result"]').exists()).toBe(false)
+    expect(page.findAll('.chart__cell--wrong')).toHaveLength(0)
   })
 
   it('says parity cannot locate two flipped stitches', async () => {

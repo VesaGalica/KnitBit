@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { rleToRow, rowToRepeatedRLE, rowToRLE } from '../../core/rle'
+import { repeatedRleToRow, rleToRow, rowToRepeatedRLE, rowToRLE } from '../../core/rle'
 import type { BitRow } from '../../core/types'
 
 describe('rowToRLE', () => {
@@ -101,5 +101,37 @@ describe('rowToRepeatedRLE', () => {
         : rleToRow(repeated)
       expect(expanded).toEqual(row)
     }
+  })
+})
+
+describe('repeatedRleToRow', () => {
+  it('repeats the group the given number of times', () => {
+    expect(repeatedRleToRow('[K2, P2] x2')).toEqual([0, 0, 1, 1, 0, 0, 1, 1])
+    expect(repeatedRleToRow('[K1, P1] x4')).toEqual([0, 1, 0, 1, 0, 1, 0, 1])
+  })
+
+  it('accepts lower case, extra spaces and the × sign', () => {
+    expect(repeatedRleToRow('  [k2,p2]X2 ')).toEqual([0, 0, 1, 1, 0, 0, 1, 1])
+    expect(repeatedRleToRow('[K2, P2] × 2')).toEqual([0, 0, 1, 1, 0, 0, 1, 1])
+  })
+
+  it('reads back what rowToRepeatedRLE writes (checked for every 8-stitch row)', () => {
+    for (let n = 0; n < 256; n++) {
+      const row = Array.from({ length: 8 }, (_, i) => ((n >> (7 - i)) & 1)) as BitRow
+      const text = rowToRepeatedRLE(row)
+      if (text.startsWith('[')) expect(repeatedRleToRow(text)).toEqual(row)
+    }
+  })
+
+  it('rejects a line that is not a whole-line repeat', () => {
+    expect(() => repeatedRleToRow('K1, [K2, P2] x2')).toThrow(/Invalid repeat/)
+    expect(() => repeatedRleToRow('[K2, P2]')).toThrow(/Invalid repeat/)
+    expect(() => repeatedRleToRow('[K2, P2] x')).toThrow(/Invalid repeat/)
+  })
+
+  it('rejects an empty group, a count of 0 and a bad stitch group', () => {
+    expect(() => repeatedRleToRow('[] x2')).toThrow(/must not be empty or 0/)
+    expect(() => repeatedRleToRow('[K2] x0')).toThrow(/must not be empty or 0/)
+    expect(() => repeatedRleToRow('[K2, Q2] x2')).toThrow(/Invalid stitch group "Q2"/)
   })
 })

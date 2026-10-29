@@ -75,3 +75,26 @@ export function rleToRow(rle: string): BitRow {
   }
   return row
 }
+
+/**
+ * "[K2, P2] x2" → [0, 0, 1, 1, 0, 0, 1, 1] (inverse of rowToRepeatedRLE)
+ *
+ * Only a whole line in the form "[group] xN" is read, because that is the
+ * only repeat rowToRepeatedRLE writes. A repeat inside a longer line, such as
+ * "K1, [K2, P2] x2, K1", is not supported. Like rleToRow, it accepts lower
+ * case and extra spaces, and both "x" and the multiplication sign "×", since
+ * printed patterns use either. The group itself is read by rleToRow, so its
+ * errors name the bad stitch group.
+ */
+export function repeatedRleToRow(text: string): BitRow {
+  const match = /^\[(.*)\]\s*[x×]\s*(\d+)$/i.exec(text.trim())
+  if (!match) {
+    throw new Error(`Invalid repeat "${text.trim()}", expected e.g. "[K2, P2] x2".`)
+  }
+  const group = rleToRow(match[1]!)
+  const times = Number(match[2])
+  if (group.length === 0 || times === 0) {
+    throw new Error(`Invalid repeat "${text.trim()}", the group and the count must not be empty or 0.`)
+  }
+  return Array.from({ length: times }, () => group).flat()
+}

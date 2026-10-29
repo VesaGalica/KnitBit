@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { visibleChar, visibleText } from '../../app/utils/visibleText'
+import { visibleChar, visibleSegments } from '../../app/utils/visibleText'
 
 describe('visibleChar', () => {
   it('gives space, line break and tab a symbol', () => {
@@ -20,8 +20,24 @@ describe('visibleChar', () => {
   })
 })
 
-describe('visibleText', () => {
-  it('keeps spaces and line breaks but shows control characters', () => {
-    expect(visibleText('a b\n\u0000\u0000')).toBe('a b\n␀␀')
+describe('visibleSegments', () => {
+  it('keeps spaces and line breaks and marks control characters', () => {
+    expect(visibleSegments('a b\n\u0000\u0000')).toEqual([
+      { text: 'a b\n', control: false },
+      { text: '␀␀', control: true },
+    ])
+  })
+
+  it('marks a tab as control and joins pieces of the same kind', () => {
+    expect(visibleSegments('x\ty\u001b\u007f')).toEqual([
+      { text: 'x', control: false },
+      { text: '⇥', control: true },
+      { text: 'y', control: false },
+      { text: '␛␡', control: true },
+    ])
+  })
+
+  it('gives no pieces for empty text', () => {
+    expect(visibleSegments('')).toEqual([])
   })
 })

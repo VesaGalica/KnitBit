@@ -33,6 +33,11 @@ describe('parseRow', () => {
     expect(parseRow('P1')).toEqual([1])
   })
 
+  it('reads a repeated pattern', () => {
+    expect(parseRow('[K2, P2] x2')).toEqual(parseRow('00110011'))
+    expect(() => parseRow('[K2, P2]')).toThrow(/Invalid repeat/)
+  })
+
   it('returns an empty row for an empty line', () => {
     expect(parseRow('')).toEqual([])
     expect(parseRow('   ')).toEqual([])

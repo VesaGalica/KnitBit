@@ -193,7 +193,7 @@ function useEncodedChart() {
           spellcheck="false"
           :placeholder="rowsPlaceholder"
         />
-        <span class="field__hint">One row per line: 8 digits (0 = knit, 1 = purl) or a pattern such as K1, P1, K3, P2, K1.</span>
+        <span class="field__hint">One row per line: 8 digits (0 = knit, 1 = purl), a pattern such as K1, P1, K3, P2, K1, or a repeat such as [K2, P2] x2.</span>
       </label>
 
       <ul
@@ -225,7 +225,7 @@ function useEncodedChart() {
         <p
           class="result"
           data-test="decoded-text"
-        >{{ visibleText(decoded.text ?? '') }}</p>
+        ><VisibleText :text="decoded.text ?? ''" /></p>
       </div>
 
       <div

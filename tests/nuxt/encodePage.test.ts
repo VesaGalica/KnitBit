@@ -42,6 +42,15 @@ describe('encode page', () => {
     expect(page.find('[data-test="decoded-text"]').text()).toBe('FI')
   })
 
+  it('decodes a row written as a repeat', async () => {
+    const page = await mountSuspended(EncodePage)
+    await page.find('[data-mode="decode"]').trigger('click')
+    // "3" = 00110011 = [K2, P2] x2, next to "F" in binary.
+    await page.find('[data-test="rows-input"]').setValue('[K2, P2] x2\n01000110')
+
+    expect(page.find('[data-test="decoded-text"]').text()).toBe('3F')
+  })
+
   it('names the line of a row with the wrong number of stitches', async () => {
     const page = await mountSuspended(EncodePage)
     await page.find('[data-mode="decode"]').trigger('click')
