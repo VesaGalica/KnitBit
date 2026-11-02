@@ -14,7 +14,30 @@ export function visibleChar(char: string): string {
   return char
 }
 
-/** visibleChar for every character, keeping normal spaces and line breaks. */
-export function visibleText(text: string): string {
-  return Array.from(text, char => (char === ' ' || char === '\n' ? char : visibleChar(char))).join('')
+/** One piece of a text: normal characters, or control characters shown as symbols. */
+export interface TextSegment {
+  text: string
+  control: boolean
+}
+
+/**
+ * visibleChar for every character, keeping normal spaces and line breaks,
+ * split into pieces so the UI can dim the control characters. A decoded
+ * chart full of K stitches is a row of zero bytes; as "␀␀␀" in full colour it
+ * looks like real text, dimmed it reads as "nothing here".
+ *
+ * Neighbouring characters of the same kind are joined:
+ * "a\u0000\u0000b" → [a], [␀␀ control], [b].
+ */
+export function visibleSegments(text: string): TextSegment[] {
+  const segments: TextSegment[] = []
+  for (const char of text) {
+    const shown = char === ' ' || char === '\n' ? char : visibleChar(char)
+    // Only characters that were replaced by a symbol count as control.
+    const control = shown !== char
+    const last = segments.at(-1)
+    if (last && last.control === control) last.text += shown
+    else segments.push({ text: shown, control })
+  }
+  return segments
 }

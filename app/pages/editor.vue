@@ -35,6 +35,7 @@ type ParityResult =
   | { kind: 'valid' }
   | { kind: 'error', position: CellPosition }
   | { kind: 'multiple' }
+  | { kind: 'fixed' }
 
 const parityResult = ref<ParityResult | null>(null)
 
@@ -49,12 +50,29 @@ function runParityCheck() {
   }
 }
 
+// True between a tap on the stitch the check named and the watcher below.
+// A plain variable, not a ref: nothing is drawn from it.
+let fixingWrongStitch = false
+
+/**
+ * A tap on the chart. If it is the stitch the check found to be wrong,
+ * flipping it back makes every row and column even again (the check found
+ * exactly one odd row and one odd column, and this stitch is in both), so
+ * the result can say "fixed" without checking again.
+ */
+function onToggle(row: number, col: number) {
+  const target = highlight.value
+  fixingWrongStitch = target?.row === row && target?.col === col
+  chart.toggle(row, col)
+}
+
 // A check result describes the chart it was made on. Every change (a tap,
 // undo, redo, clear, adding or removing parity) replaces `cells`, so any
-// change clears the result. This is also how tapping the highlighted stitch
-// fixes it and removes the highlight at the same time.
+// change clears the result, except the tap that fixes the wrong stitch,
+// which replaces it with "fixed" and removes the highlight at the same time.
 watch(() => chart.cells, () => {
-  parityResult.value = null
+  parityResult.value = fixingWrongStitch ? { kind: 'fixed' } : null
+  fixingWrongStitch = false
 })
 
 const highlight = computed(() =>
@@ -73,7 +91,7 @@ const asText = computed(() => {
   const data = chart.dataMatrix
   if ((data[0]?.length ?? 0) !== BITS_PER_BYTE) return { kind: 'wrong-width' as const }
   try {
-    return { kind: 'text' as const, text: visibleText(matrixToText(data)) }
+    return { kind: 'text' as const, text: matrixToText(data) }
   }
   catch {
     return { kind: 'invalid' as const }
@@ -181,7 +199,7 @@ const asText = computed(() => {
         :parity="chart.hasParity"
         :highlight="highlight"
         editable
-        @toggle="chart.toggle"
+        @toggle="onToggle"
       />
     </div>
 
@@ -230,6 +248,9 @@ const asText = computed(() => {
           <template v-if="parityResult.kind === 'valid'">
             Parity is correct – no stitch is wrong.
           </template>
+          <template v-else-if="parityResult.kind === 'fixed'">
+            Fixed – parity is correct again.
+          </template>
           <template v-else-if="parityResult.kind === 'error'">
             Row {{ parityResult.position.row + 1 }}, stitch {{ parityResult.position.col + 1 }} is wrong – tap it to fix it.
           </template>
@@ -247,7 +268,7 @@ const asText = computed(() => {
         v-if="asText.kind === 'text'"
         class="result"
         data-test="editor-text"
-      >{{ asText.text }}</p>
+      ><VisibleText :text="asText.text" /></p>
       <p
         v-else-if="asText.kind === 'invalid'"
         class="empty"
@@ -341,7 +362,8 @@ const asText = computed(() => {
   font-weight: 500;
 }
 
-.parity__result--valid {
+.parity__result--valid,
+.parity__result--fixed {
   background: var(--color-success-soft);
   color: var(--color-success);
 }

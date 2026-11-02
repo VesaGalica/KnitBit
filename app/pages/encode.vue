@@ -193,7 +193,7 @@ function useEncodedChart() {
           spellcheck="false"
           :placeholder="rowsPlaceholder"
         />
-        <span class="field__hint">One row per line: 8 digits (0 = knit, 1 = purl) or a pattern such as K1, P1, K3, P2, K1.</span>
+        <span class="field__hint">One row per line: 8 digits (0 = knit, 1 = purl), a pattern such as K1, P1, K3, P2, K1, or a repeat such as [K2, P2] x2.</span>
       </label>
 
       <ul
@@ -225,7 +225,7 @@ function useEncodedChart() {
         <p
           class="result"
           data-test="decoded-text"
-        >{{ visibleText(decoded.text ?? '') }}</p>
+        ><VisibleText :text="decoded.text ?? ''" /></p>
       </div>
 
       <div
@@ -244,33 +244,6 @@ function useEncodedChart() {
 
 <style scoped>
 /* Page-specific styles only; cards, fields and buttons come from main.css. */
-
-.segmented {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 3px;
-  border-radius: 10px;
-  background: var(--color-border);
-}
-
-.segmented__option {
-  min-height: 40px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--color-muted);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.segmented__option--active {
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
-}
 
 .actions {
   display: flex;
