@@ -35,8 +35,8 @@ export function restoreChart(chart: ChartStore, storage = browserStorage()): boo
 }
 
 /**
- * Saves the chart after every change. Only the chart and its parity flag are
- * saved, never the undo history. Returns the function that stops saving.
+ * Saves the chart after every change: the chart, its parity flag and the
+ * knitter's place (row and flat/round), never the undo history. Returns the function that stops saving.
  */
 export function startSavingChart(chart: ChartStore, storage = browserStorage()): () => void {
   if (!storage) return () => {}
@@ -47,6 +47,8 @@ export function startSavingChart(chart: ChartStore, storage = browserStorage()):
       height: state.height,
       cells: state.cells,
       hasParity: state.hasParity,
+      knitRow: state.knitRow,
+      knitMode: state.knitMode,
     })
   }, { detached: true })
 }

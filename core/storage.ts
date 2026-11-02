@@ -1,11 +1,18 @@
 import type { FlatChart } from './chart'
+import type { KnitMode } from './rows'
 
 /**
  * Saving a chart as text (for localStorage) and reading it back safely.
  *
  * The saved form is small, readable JSON:
- *   { "version": 1, "width": 8, "height": 2, "hasParity": false, "cells": "0100011001001001" }
+ *   { "version": 2, "width": 8, "height": 2, "hasParity": false, "cells": "0100011001001001",
+ *     "knitRow": 1, "knitMode": "flat" }
  * `cells` holds one character per stitch, row by row, like the flat chart.
+ * `knitRow` and `knitMode` are the knitter's place on the knit page, saved
+ * with the chart so closing the app does not lose it.
+ *
+ * Version 1 (before the knit page) had no knitRow and knitMode. It is still
+ * read, starting at row 1 in flat knitting, so an existing chart is not lost.
  *
  * Anything read back is treated as untrusted: it may be from an older version
  * of the app, edited by hand, or cut off. parseSavedChart therefore checks
@@ -13,7 +20,7 @@ import type { FlatChart } from './chart'
  * start with an empty chart.
  */
 
-export const SAVE_FORMAT_VERSION = 1
+export const SAVE_FORMAT_VERSION = 2
 
 /**
  * Upper limits for a saved chart. Larger than the editor's size controls,
@@ -25,6 +32,9 @@ export const MAX_SAVED_HEIGHT = 1000
 
 export interface SavedChart extends FlatChart {
   hasParity: boolean
+  /** Current row on the knit page, 1 to height. */
+  knitRow: number
+  knitMode: KnitMode
 }
 
 /** Minimal part of the Web Storage API used here, so tests can pass a fake. */
@@ -40,6 +50,8 @@ export function serializeChart(chart: SavedChart): string {
     height: chart.height,
     hasParity: chart.hasParity,
     cells: Array.from(chart.cells).join(''),
+    knitRow: chart.knitRow,
+    knitMode: chart.knitMode,
   })
 }
 
@@ -57,18 +69,27 @@ export function parseSavedChart(text: string | null): SavedChart | null {
   if (typeof data !== 'object' || data === null) return null
 
   const { version, width, height, hasParity, cells } = data as Record<string, unknown>
-  if (version !== SAVE_FORMAT_VERSION) return null
+  if (version !== 1 && version !== SAVE_FORMAT_VERSION) return null
   if (!isSize(width, MAX_SAVED_WIDTH) || !isSize(height, MAX_SAVED_HEIGHT)) return null
   if (typeof hasParity !== 'boolean') return null
   // A parity chart has at least one data stitch plus its parity row and column.
   if (hasParity && (width < 2 || height < 2)) return null
   if (typeof cells !== 'string' || cells.length !== width * height || !/^[01]*$/.test(cells)) return null
 
+  // Version 1 has no knitting place yet: start at row 1, flat.
+  const { knitRow, knitMode } = version === 1
+    ? { knitRow: 1, knitMode: 'flat' }
+    : data as Record<string, unknown>
+  if (!isSize(knitRow, height)) return null
+  if (knitMode !== 'flat' && knitMode !== 'round') return null
+
   return {
     width,
     height,
     hasParity,
     cells: Uint8Array.from(cells, char => (char === '1' ? 1 : 0)),
+    knitRow,
+    knitMode,
   }
 }
 

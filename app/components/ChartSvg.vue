@@ -16,6 +16,11 @@ import type { BitMatrix } from '~~/core/types'
  * With `parity`, the last row and column are drawn as parity stitches
  * (tinted, dashed border). `highlight` marks one stitch, e.g. the one a
  * parity check found to be wrong.
+ *
+ * With `bottomUp`, row 1 is drawn at the bottom instead of the top, the way
+ * the fabric grows from the cast-on edge (used by the knit page, see
+ * core/rows.ts). Only the drawing position changes: row indexes, numbers and
+ * events stay the same. `currentRow` (0-based) frames the row being knitted.
  */
 const props = defineProps<{
   matrix: BitMatrix
@@ -24,6 +29,8 @@ const props = defineProps<{
   editable?: boolean
   parity?: boolean
   highlight?: CellPosition | null
+  bottomUp?: boolean
+  currentRow?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -53,6 +60,16 @@ const PAD = 2
 const columns = computed(() => Math.max(0, ...props.matrix.map(row => row.length)))
 const width = computed(() => LEFT + columns.value * CELL + (props.rowLabels ? RIGHT : 0) + PAD)
 const height = computed(() => props.matrix.length * CELL + PAD * 2)
+
+/** Top edge of chart row `row` (0-based) in viewBox units. */
+function rowY(row: number): number {
+  const position = props.bottomUp ? props.matrix.length - 1 - row : row
+  return PAD + position * CELL
+}
+
+function isCurrentRow(row: number): boolean {
+  return props.currentRow === row
+}
 </script>
 
 <template>
@@ -66,10 +83,10 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
     <g
       v-for="(row, r) in matrix"
       :key="r"
-      :transform="`translate(0 ${PAD + r * CELL})`"
+      :transform="`translate(0 ${rowY(r)})`"
     >
       <text
-        class="chart__number"
+        :class="['chart__number', { 'chart__number--current': isCurrentRow(r) }]"
         :x="LEFT - 6"
         :y="CELL / 2"
         text-anchor="end"
@@ -121,7 +138,7 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
       <rect
         class="chart__parity-tint"
         :x="LEFT"
-        :y="PAD + (matrix.length - 1) * CELL"
+        :y="rowY(matrix.length - 1)"
         :width="(columns - 1) * CELL"
         :height="CELL"
       />
@@ -130,9 +147,18 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
       v-if="highlight"
       class="chart__overlay chart__highlight"
       :x="LEFT + highlight.col * CELL + 2"
-      :y="PAD + highlight.row * CELL + 2"
+      :y="rowY(highlight.row) + 2"
       :width="CELL - 4"
       :height="CELL - 4"
+    />
+    <rect
+      v-if="currentRow != null && currentRow >= 0 && currentRow < matrix.length"
+      class="chart__overlay chart__current"
+      data-test="current-row"
+      :x="LEFT - 1"
+      :y="rowY(currentRow) - 1"
+      :width="columns * CELL + 2"
+      :height="CELL + 2"
     />
   </svg>
 </template>
@@ -194,6 +220,12 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
   stroke-width: 3;
 }
 
+.chart__current {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 3;
+}
+
 .chart__number,
 .chart__label {
   fill: var(--color-muted);
@@ -203,5 +235,11 @@ const height = computed(() => props.matrix.length * CELL + PAD * 2)
 
 .chart__label {
   fill: var(--color-text);
+}
+
+/* After .chart__number, so its colour wins. */
+.chart__number--current {
+  fill: var(--color-accent);
+  font-weight: 700;
 }
 </style>

@@ -212,3 +212,70 @@ describe('chart store – parity', () => {
     expect(store.width).toBe(MAX_WIDTH + 1)
   })
 })
+
+describe('chart store – knitting place', () => {
+  it('starts at row 1, flat', () => {
+    const store = useChartStore()
+    expect(store.knitRow).toBe(1)
+    expect(store.knitMode).toBe('flat')
+  })
+
+  it('moves between rows and stops at the first and last row', () => {
+    const store = useChartStore()
+    store.load(textToMatrix('FIEK')) // 4 rows
+    store.previousRow()
+    expect(store.knitRow).toBe(1)
+    for (let i = 0; i < 10; i++) store.nextRow()
+    expect(store.knitRow).toBe(4)
+    store.previousRow()
+    expect(store.knitRow).toBe(3)
+  })
+
+  it('does not add undo steps when moving rows or switching the mode', () => {
+    const store = useChartStore()
+    store.nextRow()
+    store.setKnitMode('round')
+    expect(store.knitMode).toBe('round')
+    expect(store.canUndo).toBe(false)
+  })
+
+  it('starts a loaded chart at row 1', () => {
+    const store = useChartStore()
+    store.nextRow()
+    store.nextRow()
+    store.load(textToMatrix('FIEK'))
+    expect(store.knitRow).toBe(1)
+  })
+
+  it('starts again at row 1 after clearing, even when the chart was already empty', () => {
+    const store = useChartStore()
+    store.nextRow()
+    store.clear()
+    expect(store.knitRow).toBe(1)
+  })
+
+  it('keeps the place when a stitch is changed or parity is added', () => {
+    const store = useChartStore()
+    store.nextRow()
+    store.nextRow()
+    store.toggle(0, 0)
+    store.addParity()
+    expect(store.knitRow).toBe(3)
+  })
+
+  it('moves to the new last row when the chart gets shorter', () => {
+    const store = useChartStore()
+    for (let i = 0; i < 7; i++) store.nextRow()
+    store.resize(8, 5)
+    expect(store.knitRow).toBe(5)
+  })
+
+  it('moves to the last row when undo brings back a shorter chart', () => {
+    const store = useChartStore()
+    store.resize(8, 3)
+    store.resize(8, 10)
+    for (let i = 0; i < 9; i++) store.nextRow()
+    store.undo()
+    expect(store.knitRow).toBe(3)
+  })
+})
