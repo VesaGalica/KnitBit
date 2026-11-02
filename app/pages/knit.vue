@@ -182,6 +182,18 @@ function toggleWakeLock() {
       </div>
     </div>
 
+    <ChartExport
+      :matrix="chart.matrix"
+      :parity="chart.hasParity"
+    />
+
+    <!-- Only visible when printing (see main.css). -->
+    <PrintSheet
+      :matrix="chart.matrix"
+      :mode="chart.knitMode"
+      :parity="chart.hasParity"
+    />
+
     <div class="wake">
       <button
         v-if="wakeLock.isSupported.value"
