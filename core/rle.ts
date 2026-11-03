@@ -50,6 +50,18 @@ export function rowToRepeatedRLE(row: BitRow): string {
 }
 
 /**
+ * The instruction a knitter reads for a row: the repeated form
+ * ("[K2, P2] x2") when it is shorter than the plain one ("K2, P2, K2, P2"),
+ * otherwise the plain one. On a tie the plain form wins, because it needs
+ * no repeat to be counted.
+ */
+export function rowToShortestRLE(row: BitRow): string {
+  const plain = rowToRLE(row)
+  const repeated = rowToRepeatedRLE(row)
+  return repeated.length < plain.length ? repeated : plain
+}
+
+/**
  * "K2, P2, K2, P2" → [0, 0, 1, 1, 0, 0, 1, 1] (inverse of rowToRLE)
  *
  * Accepts lower case and extra spaces ("k2,p2" works too), because people

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { repeatedRleToRow, rleToRow, rowToRepeatedRLE, rowToRLE } from '../../core/rle'
+import { repeatedRleToRow, rleToRow, rowToRepeatedRLE, rowToRLE, rowToShortestRLE } from '../../core/rle'
 import type { BitRow } from '../../core/types'
 
 describe('rowToRLE', () => {
@@ -101,6 +101,22 @@ describe('rowToRepeatedRLE', () => {
         : rleToRow(repeated)
       expect(expanded).toEqual(row)
     }
+  })
+})
+
+describe('rowToShortestRLE', () => {
+  it('uses the repeat when it is shorter', () => {
+    expect(rowToShortestRLE([0, 1, 0, 1, 0, 1, 0, 1])).toBe('[K1, P1] x4')
+  })
+
+  it('keeps plain RLE when there is no shorter repeat', () => {
+    // "K2, P2" has no repeat at all, and "K1, P2, K5" none that fits the row.
+    expect(rowToShortestRLE([0, 0, 1, 1])).toBe('K2, P2')
+    expect(rowToShortestRLE([0, 1, 1, 0, 0, 0, 0, 0])).toBe('K1, P2, K5')
+  })
+
+  it('returns an empty string for an empty row', () => {
+    expect(rowToShortestRLE([])).toBe('')
   })
 })
 

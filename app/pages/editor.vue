@@ -296,6 +296,18 @@ const asText = computed(() => {
       <h2>Row by row</h2>
       <RowInstructions :matrix="chart.matrix" />
     </div>
+
+    <ChartExport
+      :matrix="chart.matrix"
+      :parity="chart.hasParity"
+    />
+
+    <!-- Only visible when printing (see main.css). -->
+    <PrintSheet
+      :matrix="chart.matrix"
+      :mode="chart.knitMode"
+      :parity="chart.hasParity"
+    />
   </section>
 </template>
 

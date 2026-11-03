@@ -246,3 +246,44 @@ body {
   color: var(--color-text);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
 }
+
+/*
+ * Printing (KF7). The editor and the knit page each have a PrintSheet
+ * (title, chart, instructions) as a direct child of `.page`. On screen it is
+ * hidden; on paper it is the only thing shown. Pages without a sheet print
+ * as they are, because the rule only applies to a `.page` that has one.
+ */
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 15mm;
+  }
+
+  /* Paper is white, also when the phone is in dark mode. */
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .bottom-nav,
+  .page:has(.print-sheet) > :not(.print-sheet) {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: block;
+  }
+
+  /* No room for the notch and the navigation bar on paper. */
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}
