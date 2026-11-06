@@ -27,6 +27,13 @@ import type { BitMatrix } from '~~/core/types'
  * Normally the chart scales to the width of its container ("Fit"). With
  * `stitchSize` (in px) every stitch is drawn that big instead, and the chart
  * may be wider than the screen; the parent then scrolls it sideways.
+ *
+ * Row numbers: a wide chart scaled to a phone screen draws its numbers too
+ * small to read when every row has one. Above THIN_NUMBERS_ABOVE stitches
+ * only row 1 and every 5th row are numbered, plus the highlighted and the
+ * current row, so a row the app talks about ("Row 3, stitch 5 is wrong")
+ * can always be found. `allRowNumbers` turns thinning off (the editor's
+ * Large zoom, where the numbers are big enough).
  */
 const props = defineProps<{
   matrix: BitMatrix
@@ -37,6 +44,7 @@ const props = defineProps<{
   highlight?: CellPosition | null
   currentRow?: number | null
   stitchSize?: number
+  allRowNumbers?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -82,6 +90,16 @@ const sizeStyle = computed(() => props.stitchSize
   ? { width: `${width.value * props.stitchSize / CELL}px`, maxWidth: 'none' }
   : { maxWidth: `${width.value * 1.5}px` })
 
+/** Wider than this (in stitches), the row numbers are thinned out. */
+const THIN_NUMBERS_ABOVE = 16
+
+/** Whether row `row` (0-based) gets its number; see the comment at the top. */
+function showsRowNumber(row: number): boolean {
+  if (props.allRowNumbers || columns.value <= THIN_NUMBERS_ABOVE) return true
+  const number = row + 1
+  return number === 1 || number % 5 === 0 || isCurrentRow(row) || props.highlight?.row === row
+}
+
 function isCurrentRow(row: number): boolean {
   return props.currentRow === row
 }
@@ -101,6 +119,7 @@ function isCurrentRow(row: number): boolean {
       :transform="`translate(0 ${rowY(r)})`"
     >
       <text
+        v-if="showsRowNumber(r)"
         :class="['chart__number', { 'chart__number--current': isCurrentRow(r) }]"
         :x="LEFT - 6"
         :y="CELL / 2"

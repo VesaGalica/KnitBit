@@ -162,6 +162,16 @@ describe('editor page – zoom', () => {
     expect(viewBoxWidth * 32 / 24).toBeGreaterThanOrEqual(32 * 32)
   })
 
+  it('thins the row numbers of a wide chart in Fit but shows all of them in Large', async () => {
+    useChartStore().resize(32, 12)
+    const page = await mountSuspended(EditorPage)
+    const numbers = () => page.findAll('.chart__number').map(n => n.text())
+    expect(numbers()).toEqual(['1', '5', '10'])
+
+    await page.find('[data-zoom="large"]').trigger('click')
+    expect(numbers()).toHaveLength(12)
+  })
+
   it('still toggles the right stitch in Large', async () => {
     const page = await mountSuspended(EditorPage)
     await page.find('[data-zoom="large"]').trigger('click')

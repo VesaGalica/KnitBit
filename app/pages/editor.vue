@@ -279,6 +279,7 @@ const asText = computed(() => {
           :parity="chart.hasParity"
           :highlight="highlight"
           :stitch-size="zoom === 'large' ? LARGE_STITCH_PX : undefined"
+          :all-row-numbers="zoom === 'large'"
           editable
           @toggle="onToggle"
         />

@@ -66,6 +66,22 @@ describe('algorithms page – cellular automaton', () => {
     expect(page.find('[data-test="automaton-chart"]').exists()).toBe(false)
   })
 
+  it('explains where the start stitch is on an even width', async () => {
+    const page = await mountSuspended(AlgorithmsPage)
+    expect(page.find('[data-test="even-width-note"]').exists()).toBe(false) // 31
+
+    await page.find('[data-test="automaton-width"]').setValue('30')
+    expect(page.find('[data-test="even-width-note"]').text()).toContain('right one of the two middle stitches')
+    // Index 15 of 0–29: the right one of the two middle stitches (14 and 15).
+    expect(chartRows(page.find('[data-test="automaton-chart"]'))[0]).toBe(rowWith(30, 15))
+  })
+
+  it('numbers only row 1 and every 5th row of the 31-wide automaton', async () => {
+    const page = await mountSuspended(AlgorithmsPage)
+    const numbers = page.find('[data-test="automaton-chart"]').findAll('.chart__number').map(n => n.text())
+    expect(numbers).toEqual(['1', '5', '10', '15'])
+  })
+
   it('sends the chart to the editor store with "Open in editor"', async () => {
     const page = await mountSuspended(AlgorithmsPage)
     await page.find('[data-test="automaton-width"]').setValue('9')
@@ -80,6 +96,15 @@ describe('algorithms page – cellular automaton', () => {
 })
 
 describe('algorithms page – sorting', () => {
+  it('opens with the worst case, and the example is still offered', async () => {
+    const page = await mountSuspended(AlgorithmsPage)
+    expect(page.find('[data-test="sort-input"]').element).toHaveProperty('value', '8, 7, 6, 5, 4, 3, 2, 1')
+    expect(page.find('[data-test="sort-preset-worst"]').attributes('aria-pressed')).toBe('true')
+
+    await page.find('[data-test="sort-preset-example"]').trigger('click')
+    expect(page.find('[data-test="sort-input"]').element).toHaveProperty('value', '5, 1, 4, 2, 8')
+  })
+
   it('shows 3 passes for 5, 1, 4, 2, 8', async () => {
     const page = await mountSuspended(AlgorithmsPage)
     await page.find('[data-test="sort-input"]').setValue('5, 1, 4, 2, 8')

@@ -72,3 +72,33 @@ describe('ChartSvg orientation', () => {
     expect(rowOffsets(chart)[2]).toBe(PAD)
   })
 })
+
+describe('ChartSvg row numbers', () => {
+  /** A width × height chart of K stitches. */
+  const chartOf = (width: number, height: number): BitMatrix =>
+    Array.from({ length: height }, () => Array.from({ length: width }, () => 0 as const))
+
+  const numbers = (wrapper: VueWrapper) => wrapper.findAll('.chart__number').map(n => Number(n.text()))
+
+  it('numbers every row up to 16 stitches wide', async () => {
+    const chart = await mountSuspended(ChartSvg, { props: { matrix: chartOf(16, 12), label: 'test' } })
+    expect(numbers(chart)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+  })
+
+  it('numbers only row 1 and every 5th row on a wider chart', async () => {
+    const chart = await mountSuspended(ChartSvg, { props: { matrix: chartOf(31, 16), label: 'test' } })
+    expect(numbers(chart)).toEqual([1, 5, 10, 15])
+  })
+
+  it('always numbers the highlighted and the current row', async () => {
+    const chart = await mountSuspended(ChartSvg, {
+      props: { matrix: chartOf(31, 16), label: 'test', highlight: { row: 2, col: 4 }, currentRow: 6 },
+    })
+    expect(numbers(chart)).toEqual([1, 3, 5, 7, 10, 15])
+  })
+
+  it('numbers every row with allRowNumbers', async () => {
+    const chart = await mountSuspended(ChartSvg, { props: { matrix: chartOf(32, 8), label: 'test', allRowNumbers: true } })
+    expect(numbers(chart)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+  })
+})

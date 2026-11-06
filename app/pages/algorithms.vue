@@ -41,6 +41,17 @@ const automaton = computed(() => {
   }
 })
 
+/**
+ * With an even width there is no single middle stitch. runAutomaton puts the
+ * start P at index floor(width / 2): at width 30 that is index 15, the right
+ * one of the two middle stitches (indices 14 and 15), and charts are drawn
+ * with stitch 1 on the left. The pattern is then slightly lopsided, so the
+ * page says why.
+ */
+const isEvenWidth = computed(() =>
+  typeof automatonWidth.value === 'number' && automatonWidth.value % 2 === 0,
+)
+
 const ruleBinary = computed(() =>
   typeof rule.value === 'number' ? rule.value.toString(2).padStart(8, '0') : '',
 )
@@ -66,7 +77,9 @@ const algorithms: { value: Algorithm, label: string }[] = [
   { value: 'merge', label: 'Merge sort' },
 ]
 
-const sortText = ref(SORT_PRESETS[0]!.text)
+// Opens with the worst case: it shows the difference between the two
+// algorithms best (7 bubble passes against 3 merge levels).
+const sortText = ref(SORT_PRESETS.find(preset => preset.key === 'worst')!.text)
 const sortInput = computed(() => parseSortInput(sortText.value))
 
 /**
@@ -183,6 +196,13 @@ const counts = computed(() => {
           >
         </label>
       </div>
+      <p
+        v-if="isEvenWidth && automaton.errors.length === 0"
+        class="field__hint even-note"
+        data-test="even-width-note"
+      >
+        Even width: there is no single middle stitch, so the start stitch is the right one of the two middle stitches.
+      </p>
     </div>
 
     <ul
@@ -410,6 +430,10 @@ const counts = computed(() => {
   grid-auto-flow: column;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
+}
+
+.even-note {
+  margin: var(--space-2) 0 0;
 }
 
 .numbers {
