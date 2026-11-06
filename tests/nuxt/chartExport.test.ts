@@ -73,12 +73,9 @@ describe('chart export', () => {
     expect(instructions[1]).toEqual(['2', 'WS', 'P1, K1, P2, K1, P2, K1'])
   })
 
-  it('follows the flat/round switch on the print sheet', async () => {
-    useChartStore().setKnitMode('round')
+  it('never mentions knitting in the round on the print sheet', async () => {
     const page = await mountSuspended(KnitPage)
-    const sheet = page.find('[data-test="print-sheet"]')
-    expect(sheet.text()).toContain('Knitted in the round')
-    expect(sheet.findAll('tbody tr')[1]!.findAll('td')[1]!.text()).toBe('RS')
+    expect(page.find('[data-test="print-sheet"]').text()).not.toMatch(/round/i)
   })
 })
 

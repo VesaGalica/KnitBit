@@ -214,10 +214,9 @@ describe('chart store – parity', () => {
 })
 
 describe('chart store – knitting place', () => {
-  it('starts at row 1, flat', () => {
+  it('starts at row 1', () => {
     const store = useChartStore()
     expect(store.knitRow).toBe(1)
-    expect(store.knitMode).toBe('flat')
   })
 
   it('moves between rows and stops at the first and last row', () => {
@@ -231,11 +230,9 @@ describe('chart store – knitting place', () => {
     expect(store.knitRow).toBe(3)
   })
 
-  it('does not add undo steps when moving rows or switching the mode', () => {
+  it('does not add undo steps when moving rows', () => {
     const store = useChartStore()
     store.nextRow()
-    store.setKnitMode('round')
-    expect(store.knitMode).toBe('round')
     expect(store.canUndo).toBe(false)
   })
 

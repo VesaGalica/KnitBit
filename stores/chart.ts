@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { chartToMatrix, createChart, matrixToChart, resizeChart, toggleCell } from '../core/chart'
 import type { FlatChart } from '../core/chart'
 import { addParity } from '../core/parity'
-import type { KnitMode } from '../core/rows'
 import type { SavedChart } from '../core/storage'
 import type { BitMatrix } from '../core/types'
 
@@ -36,7 +35,7 @@ export interface ChartSnapshot extends FlatChart {
  * - The old array is never changed again, so undo/redo can keep references
  *   to old charts without copying them.
  *
- * `knitRow` and `knitMode` are the knitter's place on the knit page. They are
+ * `knitRow` is the knitter's place on the knit page. It is
  * not part of the undo history: moving to the next row is progress, not an
  * edit of the chart. A new chart (load) or a cleared chart starts at row 1;
  * any other change keeps the place, so fixing one stitch mid-way does not
@@ -50,7 +49,6 @@ export const useChartStore = defineStore('chart', {
     hasParity: false,
     /** Current row on the knit page, 1-based, always between 1 and height. */
     knitRow: 1,
-    knitMode: 'flat' as KnitMode,
     past: [] as ChartSnapshot[],
     future: [] as ChartSnapshot[],
   }),
@@ -133,7 +131,6 @@ export const useChartStore = defineStore('chart', {
     restore(saved: SavedChart) {
       this.show(saved)
       this.knitRow = saved.knitRow
-      this.knitMode = saved.knitMode
       this.past = []
       this.future = []
     },
@@ -148,10 +145,6 @@ export const useChartStore = defineStore('chart', {
     /** Moves to the previous row; stays on row 1. */
     previousRow() {
       this.knitRow = Math.max(this.knitRow - 1, 1)
-    },
-
-    setKnitMode(mode: KnitMode) {
-      this.knitMode = mode
     },
 
     undo() {

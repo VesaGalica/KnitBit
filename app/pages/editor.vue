@@ -305,7 +305,6 @@ const asText = computed(() => {
     <!-- Only visible when printing (see main.css). -->
     <PrintSheet
       :matrix="chart.matrix"
-      :mode="chart.knitMode"
       :parity="chart.hasParity"
     />
   </section>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { knittingRows } from '~~/core/rows'
-import type { KnitMode } from '~~/core/rows'
 import { useChartStore } from '~~/stores/chart'
 
 useHead({ title: 'Knit · KnitBit' })
@@ -12,9 +11,9 @@ const chart = useChartStore()
 /**
  * Every row of the active chart as the knitter works it (core/rows.ts):
  * chart row 1 first, RS rows right to left, WS rows left to right and
- * inverted. Recomputed when the chart or the flat/round mode changes.
+ * inverted. Recomputed when the chart changes.
  */
-const rows = computed(() => knittingRows(chart.matrix, chart.knitMode))
+const rows = computed(() => knittingRows(chart.matrix))
 
 /** The store keeps knitRow between 1 and height, so this row always exists. */
 const current = computed(() => rows.value[chart.knitRow - 1]!)
@@ -27,11 +26,6 @@ const isLast = computed(() => chart.knitRow >= chart.height)
  * most likely the user has not made a chart yet, so a hint says where to.
  */
 const isAllKnit = computed(() => chart.cells.every(cell => cell === 0))
-
-const MODES: Array<{ value: KnitMode, label: string }> = [
-  { value: 'flat', label: 'Flat' },
-  { value: 'round', label: 'Round' },
-]
 
 const SIDE_TEXT = {
   RS: 'Right side · work the chart row right to left',
@@ -102,26 +96,6 @@ function toggleWakeLock() {
       </p>
     </div>
 
-    <div
-      class="segmented"
-      role="tablist"
-      aria-label="Knitting method"
-    >
-      <button
-        v-for="mode in MODES"
-        :key="mode.value"
-        type="button"
-        role="tab"
-        class="segmented__option"
-        :class="{ 'segmented__option--active': chart.knitMode === mode.value }"
-        :aria-selected="chart.knitMode === mode.value"
-        :data-mode="mode.value"
-        @click="chart.setKnitMode(mode.value)"
-      >
-        {{ mode.label }}
-      </button>
-    </div>
-
     <!-- The current row, readable from a lap at arm's length. -->
     <div
       class="card current"
@@ -190,7 +164,6 @@ function toggleWakeLock() {
     <!-- Only visible when printing (see main.css). -->
     <PrintSheet
       :matrix="chart.matrix"
-      :mode="chart.knitMode"
       :parity="chart.hasParity"
     />
 

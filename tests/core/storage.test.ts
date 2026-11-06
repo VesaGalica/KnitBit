@@ -5,7 +5,7 @@ import { matrixToChart } from '../../core/chart'
 import { addParity } from '../../core/parity'
 import { textToMatrix } from '../../core/encoding'
 
-const KNIT_START = { knitRow: 1, knitMode: 'flat' } as const
+const KNIT_START = { knitRow: 1 } as const
 const fiekChart: SavedChart = { ...matrixToChart(textToMatrix('FIEK')), hasParity: false, ...KNIT_START }
 
 /** Builds a saved-chart text with some fields replaced. */
@@ -31,9 +31,10 @@ function fakeStorage(failing = false): KeyValueStorage & { data: Map<string, str
 
 describe('serializeChart and parseSavedChart', () => {
   it('writes readable JSON with one character per stitch', () => {
-    const text = serializeChart({ ...matrixToChart([[0, 1], [1, 1]]), hasParity: false, knitRow: 2, knitMode: 'round' })
+    const text = serializeChart({ ...matrixToChart([[0, 1], [1, 1]]), hasParity: false, knitRow: 2 })
+    // Version 3: no knitting mode any more, the app knits flat only.
     expect(JSON.parse(text)).toEqual({
-      version: 2, width: 2, height: 2, hasParity: false, cells: '0111', knitRow: 2, knitMode: 'round',
+      version: 3, width: 2, height: 2, hasParity: false, cells: '0111', knitRow: 2,
     })
   })
 
@@ -51,13 +52,22 @@ describe('serializeChart and parseSavedChart', () => {
   })
 
   it('round trips the knitting place', () => {
-    const back = parseSavedChart(serializeChart({ ...fiekChart, knitRow: 3, knitMode: 'round' }))!
-    expect(back).toMatchObject({ knitRow: 3, knitMode: 'round' })
+    const back = parseSavedChart(serializeChart({ ...fiekChart, knitRow: 3 }))!
+    expect(back).toMatchObject({ knitRow: 3 })
   })
 
-  it('reads a version 1 save (before the knit page) as row 1, flat', () => {
+  it('reads a version 1 save (before the knit page) as row 1', () => {
     const v1 = '{"version":1,"width":2,"height":2,"hasParity":false,"cells":"0111"}'
-    expect(parseSavedChart(v1)).toMatchObject({ width: 2, height: 2, knitRow: 1, knitMode: 'flat' })
+    expect(parseSavedChart(v1)).toEqual({
+      width: 2, height: 2, hasParity: false, cells: Uint8Array.from([0, 1, 1, 1]), knitRow: 1,
+    })
+  })
+
+  it.each(['flat', 'round', 'sideways', undefined])('reads a version 2 save with knitMode %s and ignores the mode', (knitMode) => {
+    const v2 = JSON.stringify({ version: 2, width: 2, height: 2, hasParity: false, cells: '0111', knitRow: 2, knitMode })
+    expect(parseSavedChart(v2)).toEqual({
+      width: 2, height: 2, hasParity: false, cells: Uint8Array.from([0, 1, 1, 1]), knitRow: 2,
+    })
   })
 })
 
@@ -67,12 +77,11 @@ describe('parseSavedChart rejects broken data', () => {
     ['not JSON', '{"version":1,'],
     ['JSON but not an object', '42'],
     ['JSON null', 'null'],
-    ['an unknown format version', saved({ version: 3 })],
+    ['an unknown format version', saved({ version: 4 })],
     ['a missing knitting row', saved({ knitRow: undefined })],
     ['knitting row 0', saved({ knitRow: 0 })],
     ['a knitting row past the last row', saved({ knitRow: 5 })],
     ['a fractional knitting row', saved({ knitRow: 1.5 })],
-    ['an unknown knitting mode', saved({ knitMode: 'sideways' })],
     ['a missing width', saved({ width: undefined })],
     ['a zero height', saved({ height: 0 })],
     ['a fractional width', saved({ width: 7.5 })],

@@ -27,12 +27,10 @@ import type { Bit, BitMatrix, BitRow } from './types'
  *      stitch made from the back shows as a purl on the front, and the other
  *      way round.
  *
- * Flat knitting turns the work after every row, so RS and WS rows alternate
- * (odd rows RS, even rows WS). Knitting in the round never turns the work,
- * so every row is an RS row.
+ * The app supports flat knitting only. Flat knitting turns the work after
+ * every row, so RS and WS rows alternate: odd rows RS, even rows WS.
  */
 
-export type KnitMode = 'flat' | 'round'
 export type Side = 'RS' | 'WS'
 
 /** One row as the knitter works it. */
@@ -46,9 +44,9 @@ export interface KnittingRow {
   instruction: string
 }
 
-/** Row 1 is always RS; in flat knitting every even row is WS. */
-export function rowSide(number: number, mode: KnitMode): Side {
-  return mode === 'flat' && number % 2 === 0 ? 'WS' : 'RS'
+/** Odd rows (row 1 first) are RS, even rows WS, because the work is turned after every row. */
+export function rowSide(number: number): Side {
+  return number % 2 === 0 ? 'WS' : 'RS'
 }
 
 /**
@@ -70,10 +68,10 @@ export function fromWorkingOrder(stitches: BitRow, side: Side): BitRow {
 }
 
 /** The whole chart as knitting rows, in knitting order (chart row 1 first). */
-export function knittingRows(matrix: BitMatrix, mode: KnitMode): KnittingRow[] {
+export function knittingRows(matrix: BitMatrix): KnittingRow[] {
   return matrix.map((chartRow, index) => {
     const number = index + 1
-    const side = rowSide(number, mode)
+    const side = rowSide(number)
     const stitches = toWorkingOrder(chartRow, side)
     return { number, side, stitches, instruction: rowToShortestRLE(stitches) }
   })
@@ -82,7 +80,7 @@ export function knittingRows(matrix: BitMatrix, mode: KnitMode): KnittingRow[] {
 /**
  * "Knits" the rows back into a chart, i.e. what the RS of the fabric shows.
  * Used to prove that knittingRows loses nothing: rowsToMatrix(knittingRows(m))
- * equals m. Each row carries its own side, so no mode is needed.
+ * equals m. Each row carries its own side.
  */
 export function rowsToMatrix(rows: KnittingRow[]): BitMatrix {
   return rows.map(row => fromWorkingOrder(row.stitches, row.side))
