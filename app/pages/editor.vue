@@ -275,7 +275,7 @@ const asText = computed(() => {
       >
         <ChartSvg
           :matrix="chart.matrix"
-          :label="`Editable knitting chart, ${chart.height} rows of ${chart.width} stitches`"
+          :label="`Editable knitting chart, ${plural(chart.height, 'row')} of ${plural(chart.width, 'stitch', 'stitches')}`"
           :parity="chart.hasParity"
           :highlight="highlight"
           :stitch-size="zoom === 'large' ? LARGE_STITCH_PX : undefined"

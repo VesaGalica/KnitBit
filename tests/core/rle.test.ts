@@ -140,6 +140,7 @@ describe('repeatedRleToRow', () => {
   })
 
   it('rejects a line that is not a whole-line repeat', () => {
+    // A whole mixed line is parseRow's job (notation.ts), not repeatedRleToRow's.
     expect(() => repeatedRleToRow('K1, [K2, P2] x2')).toThrow(/Invalid repeat/)
     expect(() => repeatedRleToRow('[K2, P2]')).toThrow(/Invalid repeat/)
     expect(() => repeatedRleToRow('[K2, P2] x')).toThrow(/Invalid repeat/)

@@ -91,9 +91,9 @@ export function rleToRow(rle: string): BitRow {
 /**
  * "[K2, P2] x2" → [0, 0, 1, 1, 0, 0, 1, 1] (inverse of rowToRepeatedRLE)
  *
- * Only a whole line in the form "[group] xN" is read, because that is the
- * only repeat rowToRepeatedRLE writes. A repeat inside a longer line, such as
- * "K1, [K2, P2] x2, K1", is not supported. Like rleToRow, it accepts lower
+ * Reads exactly one repeat, "[group] xN". A line that mixes repeats and
+ * plain groups, such as "[K1, P1] x3, K2", is split into its parts by
+ * parseRow (notation.ts), which then calls this for every repeat. Like rleToRow, it accepts lower
  * case and extra spaces, and both "x" and the multiplication sign "×", since
  * printed patterns use either. The group itself is read by rleToRow, so its
  * errors name the bad stitch group.

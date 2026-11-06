@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BITS_PER_BYTE, matrixToText, textToBytes, textToMatrix } from '~~/core/encoding'
 import type { ByteInfo } from '~~/core/encoding'
-import { parseRow } from '~~/core/notation'
+import { BinaryRowError, parseRow } from '~~/core/notation'
 import { rowToRLE } from '~~/core/rle'
 import type { BitMatrix } from '~~/core/types'
 import { useChartStore } from '~~/stores/chart'
@@ -62,7 +62,12 @@ const decoded = computed(() => {
       rows.push(row)
     }
     catch (error) {
-      errors.push(`Line ${index + 1}: ${(error as Error).message}`)
+      // A line meant as binary (it starts with a digit) gets the binary rule,
+      // not a K/P message about stitch groups.
+      const message = error instanceof BinaryRowError
+        ? `a row must be ${BITS_PER_BYTE} digits of 0 and 1; "${error.invalid}" is not 0 or 1.`
+        : (error as Error).message
+      errors.push(`Line ${index + 1}: ${message}`)
     }
   })
 
@@ -126,7 +131,7 @@ function useEncodedChart() {
           v-if="text"
           class="field__hint"
         >
-          {{ charCount }} characters → {{ matrix.length }} rows of 8 stitches
+          {{ plural(charCount, 'character') }} → {{ plural(matrix.length, 'row') }} of 8 stitches
         </span>
       </label>
 
@@ -146,7 +151,7 @@ function useEncodedChart() {
           <ChartSvg
             :matrix="matrix"
             :row-labels="rowLabels"
-            :label="`Knitting chart with ${matrix.length} rows of 8 stitches`"
+            :label="`Knitting chart with ${plural(matrix.length, 'row')} of 8 stitches`"
           />
         </div>
 
@@ -193,7 +198,7 @@ function useEncodedChart() {
           spellcheck="false"
           :placeholder="rowsPlaceholder"
         />
-        <span class="field__hint">One row per line: 8 digits (0 = knit, 1 = purl), a pattern such as K1, P1, K3, P2, K1, or a repeat such as [K2, P2] x2.</span>
+        <span class="field__hint">One row per line: 8 digits (0 = knit, 1 = purl), or stitch groups and repeats separated by commas, such as K1, P1, K3, P2, K1 or [K1, P1] x3, K2.</span>
       </label>
 
       <ul
@@ -235,7 +240,7 @@ function useEncodedChart() {
         <h2>Chart</h2>
         <ChartSvg
           :matrix="decoded.rows"
-          :label="`Knitting chart with ${decoded.rows.length} rows of 8 stitches`"
+          :label="`Knitting chart with ${plural(decoded.rows.length, 'row')} of 8 stitches`"
         />
       </div>
     </template>

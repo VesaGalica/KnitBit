@@ -266,7 +266,7 @@ const counts = computed(() => {
         </div>
         <ChartSvg
           :matrix="automaton.matrix!"
-          :label="`Rule ${rule}, ${automatonRows} rows of ${automatonWidth} stitches`"
+          :label="`Rule ${rule}, ${plural(automatonRows as number, 'row')} of ${plural(automatonWidth as number, 'stitch', 'stitches')}`"
         />
       </div>
 
@@ -411,7 +411,7 @@ const counts = computed(() => {
         <ChartSvg
           :matrix="selected!.matrix"
           :row-labels="sortRowLabels"
-          :label="`${algorithm === 'bubble' ? 'Bubble' : 'Merge'} sort chart, ${selected!.matrix.length} rows`"
+          :label="`${algorithm === 'bubble' ? 'Bubble' : 'Merge'} sort chart, ${plural(selected!.matrix.length, 'row')}`"
         />
       </div>
     </template>
