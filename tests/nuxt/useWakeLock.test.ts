@@ -72,6 +72,29 @@ describe('useWakeLock', () => {
     const { api } = await mountWakeLock()
     expect(await api.request()).toBe(false)
     expect(api.isActive.value).toBe(false)
+    expect(api.failed.value).toBe(true)
+  })
+
+  it('clears the failure after a later success or a deliberate release', async () => {
+    const request = vi.fn()
+      .mockRejectedValueOnce(new Error('NotAllowedError'))
+      .mockResolvedValueOnce(fakeSentinel())
+      .mockRejectedValueOnce(new Error('NotAllowedError'))
+    Object.defineProperty(navigator, 'wakeLock', { value: { request }, configurable: true })
+
+    const { api } = await mountWakeLock()
+    await api.request()
+    expect(api.failed.value).toBe(true)
+
+    await api.request()
+    expect(api.failed.value).toBe(false)
+    expect(api.isActive.value).toBe(true)
+
+    await api.release()
+    await api.request()
+    expect(api.failed.value).toBe(true)
+    await api.release()
+    expect(api.failed.value).toBe(false)
   })
 
   it('takes the lock again when the page becomes visible', async () => {

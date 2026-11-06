@@ -190,15 +190,23 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-.button:disabled {
-  border-color: var(--color-border);
-  color: var(--color-muted);
-  cursor: default;
-}
-
 .button--filled {
   background: var(--color-accent);
   color: var(--color-surface);
+}
+
+/*
+ * Disabled, filled or not: grey outline, no fill, muted text. After
+ * .button--filled so a disabled "Next" is not a solid red button with grey
+ * text on it (contrast about 1.3:1). Muted text on the card background:
+ * light #6b655e on #ffffff = 5.8:1, dark #a39b91 on #252321 = 5.7:1, so the
+ * label stays readable (WCAG AA 4.5:1) while clearly looking inactive.
+ */
+.button:disabled {
+  border-color: var(--color-border);
+  background: transparent;
+  color: var(--color-muted);
+  cursor: default;
 }
 
 .errors {

@@ -4,10 +4,13 @@
  * Uses the Screen Wake Lock API. Where it is not available (older iOS,
  * some in-app browsers) every method is a safe no-op and `isSupported`
  * is false, so the UI can tell the user to keep the screen on manually.
+ * `failed` is true when the browser has the API but refused the last
+ * request (e.g. Low Power Mode); the UI then gives the same advice.
  */
 export function useWakeLock() {
   const isSupported = ref(false)
   const isActive = ref(false)
+  const failed = ref(false)
 
   // The browser releases the lock on its own when the page is hidden
   // (switching apps, locking the phone). `wanted` remembers that the user
@@ -37,17 +40,21 @@ export function useWakeLock() {
       })
       sentinel = lock
       isActive.value = true
+      failed.value = false
       return true
     }
     catch {
       // Refused, e.g. low battery mode or the page is not visible.
       isActive.value = false
+      failed.value = true
       return false
     }
   }
 
   async function release(): Promise<void> {
     wanted = false
+    // Turned off on purpose: not a failure, so no Auto-Lock advice.
+    failed.value = false
     if (!sentinel) return
     await sentinel.release()
     sentinel = null
@@ -73,6 +80,7 @@ export function useWakeLock() {
   return {
     isSupported: readonly(isSupported),
     isActive: readonly(isActive),
+    failed: readonly(failed),
     request,
     release,
   }

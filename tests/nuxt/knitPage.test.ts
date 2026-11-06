@@ -122,6 +122,39 @@ describe('knit page', () => {
     expect(page.find('[data-test="wake-lock"]').exists()).toBe(false)
   })
 
+  it('advises Auto-Lock "Never" when the browser refuses the wake lock', async () => {
+    Object.defineProperty(navigator, 'wakeLock', {
+      configurable: true,
+      value: { request: async () => { throw new Error('NotAllowedError') } },
+    })
+    const page = await mountSuspended(KnitPage)
+    await new Promise(resolve => setTimeout(resolve, 0)) // let the request fail
+    expect(page.find('[data-test="wake-lock"]').text()).toContain('Screen may turn off')
+    expect(page.find('[data-test="wake-lock-failed"]').text()).toContain('Set Auto-Lock to Never')
+    page.unmount()
+  })
+
+  it('shows no Auto-Lock advice while the screen is kept on', async () => {
+    const sentinel = { addEventListener: () => {}, release: async () => {} }
+    Object.defineProperty(navigator, 'wakeLock', {
+      configurable: true,
+      value: { request: async () => sentinel },
+    })
+    const page = await mountSuspended(KnitPage)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(page.find('[data-test="wake-lock-failed"]').exists()).toBe(false)
+    page.unmount()
+  })
+
+  it('has Previous, the progress and Next in one row of the stepper', async () => {
+    useChartStore().load(textToMatrix('FIEK'))
+    const page = await mountSuspended(KnitPage)
+    const row = page.find('.stepper__row')
+    expect(row.find('[data-test="previous"]').exists()).toBe(true)
+    expect(row.find('[data-test="progress"]').text()).toBe('Row 1 of 4')
+    expect(row.find('[data-test="next"]').exists()).toBe(true)
+  })
+
   it('keeps the screen on and shows it when the wake lock is supported', async () => {
     const sentinel = { addEventListener: () => {}, release: async () => {} }
     Object.defineProperty(navigator, 'wakeLock', {
