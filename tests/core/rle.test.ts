@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { repeatedRleToRow, rleToRow, rowToRepeatedRLE, rowToRLE, rowToShortestRLE } from '../../core/rle'
-import type { BitRow } from '../../core/types'
+import type { BitMatrix, BitRow } from '../../core/types'
+import { textToMatrix } from '../../core/encoding'
+import { runAutomaton } from '../../core/automaton'
 
 describe('rowToRLE', () => {
   it('writes [0,0,1,1,0,0,1,1] as "K2, P2, K2, P2"', () => {
@@ -150,5 +152,41 @@ describe('repeatedRleToRow', () => {
     expect(() => repeatedRleToRow('[] x2')).toThrow(/must not be empty or 0/)
     expect(() => repeatedRleToRow('[K2] x0')).toThrow(/must not be empty or 0/)
     expect(() => repeatedRleToRow('[K2, Q2] x2')).toThrow(/Invalid stitch group "Q2"/)
+  })
+})
+
+/**
+ * The numbers in thesis Table 4 (RLE compression), computed with the same
+ * functions the app uses. "Groups" are the stitch groups a knitter reads,
+ * e.g. "K2, P2" is 2 groups. "With repeats" counts the groups in the
+ * shortest instruction (rowToShortestRLE), so "[K2, P2] x5" is 2 groups.
+ */
+describe('thesis Table 4: RLE groups', () => {
+  /** Number of stitch groups ("K3", "P1", ...) in an instruction. */
+  const groups = (instruction: string) => instruction.match(/[KP]\d+/g)?.length ?? 0
+  const stitches = (chart: BitMatrix) => chart.reduce((sum, row) => sum + row.length, 0)
+  const plainGroups = (chart: BitMatrix) => chart.reduce((sum, row) => sum + groups(rowToRLE(row)), 0)
+  const shortestGroups = (chart: BitMatrix) => chart.reduce((sum, row) => sum + groups(rowToShortestRLE(row)), 0)
+
+  it('rib 2×2, 20 rows × 20 stitches: 400 stitches, 200 groups, 40 with repeats', () => {
+    // Every row: K2, P2, K2, P2, … = [K2, P2] x5.
+    const rib: BitMatrix = Array.from({ length: 20 }, () =>
+      Array.from({ length: 20 }, (_, col) => (col % 4 < 2 ? 0 : 1)))
+    expect(stitches(rib)).toBe(400)
+    expect(plainGroups(rib)).toBe(200)
+    expect(shortestGroups(rib)).toBe(40)
+    expect(rowToShortestRLE(rib[0]!)).toBe('[K2, P2] x5')
+  })
+
+  it('"FIEK": 32 stitches, 23 groups', () => {
+    const fiek = textToMatrix('FIEK')
+    expect(stitches(fiek)).toBe(32)
+    expect(plainGroups(fiek)).toBe(23)
+  })
+
+  it('rule 90 (width 31, 16 rows): 496 stitches, 176 groups', () => {
+    const rule90 = runAutomaton(90, 31, 16)
+    expect(stitches(rule90)).toBe(496)
+    expect(plainGroups(rule90)).toBe(176)
   })
 })
