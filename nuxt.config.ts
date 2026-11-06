@@ -1,4 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+
+// Path the app is served from. Locally it is the domain root ('/'). On GitHub
+// Pages the site lives under the repository name, so the deploy workflow sets
+// NUXT_APP_BASE_URL=/KnitBit/. Nuxt reads the same variable for its own files
+// (app.baseURL); the links and PWA settings below use it too, because they
+// would otherwise point at the domain root and break under a sub-path.
+const base = process.env.NUXT_APP_BASE_URL || '/'
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-27',
 
@@ -37,8 +45,8 @@ export default defineNuxtConfig({
         { name: 'theme-color', content: '#1b1a19', media: '(prefers-color-scheme: dark)' },
       ],
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+        { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: `${base}apple-touch-icon.png` },
       ],
     },
   },
@@ -50,23 +58,25 @@ export default defineNuxtConfig({
       short_name: 'KnitBit',
       description: 'Knitting as a system for binary representation and modelling of algorithms',
       lang: 'en',
-      start_url: '/',
-      scope: '/',
+      start_url: base,
+      scope: base,
       display: 'standalone',
       orientation: 'portrait',
       background_color: '#faf7f2',
       theme_color: '#faf7f2',
       icons: [
-        { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-        { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-        { src: '/maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        // Relative paths resolve against the manifest's own URL, which already
+        // includes the base path.
+        { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+        { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+        { src: 'maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
     },
     workbox: {
       // Pre-cache the whole build so every tab works offline after the first load.
       globPatterns: ['**/*.{js,css,html,json,svg,png,ico,webmanifest}'],
       // Unknown URLs fall back to the app shell (client-side routing).
-      navigateFallback: '/',
+      navigateFallback: base,
     },
     client: {
       installPrompt: true,
