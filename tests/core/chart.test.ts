@@ -73,8 +73,15 @@ describe('resizeChart', () => {
     [0, 1, 0],
   ]
 
-  it('keeps the top-left stitches when shrinking', () => {
+  // Row 1 is drawn at the bottom, so row 1, stitch 1 is the cast-on corner (bottom left).
+  it('keeps the cast-on corner (row 1, stitch 1) when shrinking', () => {
     expect(chartToMatrix(resizeChart(matrixToChart(start), 2, 1))).toEqual([[1, 0]])
+  })
+
+  it('adds new rows after the last row (drawn at the top) and keeps row 1', () => {
+    const grown = chartToMatrix(resizeChart(matrixToChart(start), 3, 3))
+    expect(grown[0]).toEqual(start[0])
+    expect(grown[2]).toEqual([0, 0, 0])
   })
 
   it('adds K stitches when growing', () => {

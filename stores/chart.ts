@@ -105,7 +105,7 @@ export const useChartStore = defineStore('chart', {
     },
 
     /**
-     * Adds a parity column on the right and a parity row at the bottom
+     * Adds a parity column on the right and a parity row after the last row
      * (see core/parity.ts), as one undoable step. The chart grows by one in
      * each direction, which may go past MAX_WIDTH / MAX_HEIGHT: those limits
      * only apply to the size controls.
@@ -118,7 +118,7 @@ export const useChartStore = defineStore('chart', {
     /** Removes the parity row and column again, as one undoable step. */
     removeParity() {
       if (!this.hasParity) return
-      // resizeChart keeps the top-left part, so shrinking by one in each
+      // resizeChart keeps the cast-on corner (row 1, stitch 1), so shrinking by one in each
       // direction drops exactly the last row and the last column.
       this.apply(resizeChart(this.current(), this.width - 1, this.height - 1), false)
     },

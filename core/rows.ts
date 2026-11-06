@@ -8,13 +8,13 @@ import type { Bit, BitMatrix, BitRow } from './types'
  * from the front. Knitting it raises two questions the chart does not answer.
  *
  * 1. Which chart row is knitted first?
- *    Chart row 1 (the top row on screen) is knitted row 1, the first row
- *    after casting on. Row r of a chart is byte r of the text, generation r
- *    of an automaton or state r of a sort, so the knitter works through the
+ *    Chart row 1 (index 0) is knitted row 1, the first row after casting
+ *    on. Row r of a chart is byte r of the text, generation r of an
+ *    automaton or state r of a sort, so the knitter works through the
  *    computation forwards in time, and every page uses the same row numbers.
- *    The price: the finished fabric, held with the cast-on edge at the
- *    bottom, is the chart turned upside down. The knit page, the print sheet
- *    and the SVG download therefore draw the chart bottom-up, like the fabric.
+ *    The fabric grows upwards from the cast-on edge, so every chart in the
+ *    app (screen, print sheet and SVG download) is drawn bottom-up: row 1 at
+ *    the bottom, the picture looks like the fabric.
  *
  * 2. In which direction is a row worked, and which stitch is made?
  *    Stitches are always taken from the tip of the left needle.

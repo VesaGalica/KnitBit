@@ -150,7 +150,6 @@ function toggleWakeLock() {
           :matrix="chart.matrix"
           :parity="chart.hasParity"
           :current-row="chart.knitRow - 1"
-          bottom-up
           label="Chart, row 1 at the bottom, current row framed"
         />
       </div>

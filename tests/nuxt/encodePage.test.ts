@@ -33,6 +33,18 @@ describe('encode page', () => {
     expect(page.findAll('.chart__label').map(label => label.text())).toEqual(['ë 1/2', 'ë 2/2'])
   })
 
+  it('draws the first character at the bottom (row 1, cast on)', async () => {
+    const page = await mountSuspended(EncodePage)
+    await page.find('[data-test="text-input"]').setValue('FI')
+
+    const rowY = (label: string) => {
+      const group = page.findAll('svg > g').find(row => row.find('.chart__label').text() === label)!
+      return Number(/translate\(0 ([\d.]+)\)/.exec(group.attributes('transform')!)![1])
+    }
+    expect(rowY('F')).toBeGreaterThan(rowY('I'))
+    expect(page.find('.chart__cast-on').text()).toBe('Row 1 – cast on')
+  })
+
   it('decodes rows written in either notation', async () => {
     const page = await mountSuspended(EncodePage)
     await page.find('[data-mode="decode"]').trigger('click')

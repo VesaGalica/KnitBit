@@ -4,7 +4,7 @@ import type { Bit, BitMatrix } from './types'
  * Two-dimensional (even) parity for knitting charts.
  *
  * addParity appends one parity stitch to the end of every row and one parity
- * row at the bottom, so that every row and every column of the result has an
+ * row after the last row, so that every row and every column of the result has an
  * even number of P stitches (1s). The bottom-right corner is the parity of the
  * parity row, so the parity row and column also check each other.
  *
@@ -17,6 +17,12 @@ import type { Bit, BitMatrix } from './types'
  * If exactly one stitch is knitted wrong, exactly one row and one column
  * become odd, and their crossing is the wrong stitch. This also works when the
  * mistake is in a parity stitch itself.
+ *
+ * The diagram is in data order (row 1 first). On screen row 1 is at the
+ * bottom, so the parity row is drawn at the top. It is knitted last on
+ * purpose: it is a checksum over all data rows, like a trailer after the
+ * data, and the data rows keep their numbers 1 to n, so row numbers, the
+ * text decoding and removing parity again all stay the same.
  */
 
 export interface CellPosition {

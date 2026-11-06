@@ -57,8 +57,11 @@ export function toggleCell(chart: FlatChart, row: number, col: number): FlatChar
 
 /**
  * Returns a chart with a new size. Stitches in the part both sizes share
- * (the top-left corner) are kept; new stitches are K (0). Growing and then
- * shrinking back therefore gives the original chart.
+ * (rows from row 1, stitches from stitch 1) are kept; new stitches are K (0).
+ * Charts are drawn with row 1 at the bottom, so this keeps the cast-on
+ * corner (bottom left): new rows are added at the top (knitted later), new
+ * stitches on the right. Growing and then shrinking back therefore gives the
+ * original chart.
  */
 export function resizeChart(chart: FlatChart, width: number, height: number): FlatChart {
   const resized = createChart(width, height)

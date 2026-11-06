@@ -207,8 +207,9 @@ const asText = computed(() => {
       <h2>Parity</h2>
       <template v-if="!chart.hasParity">
         <p class="empty parity__intro">
-          Adds one stitch to every row and column so that each has an even number of P stitches.
-          If one stitch is knitted wrong later, a check finds it.
+          Adds one stitch to every row (a column on the right) and one row at the top, knitted last,
+          so that each row and column has an even number of P stitches. If one stitch is knitted
+          wrong later, a check finds it.
         </p>
         <button
           type="button"

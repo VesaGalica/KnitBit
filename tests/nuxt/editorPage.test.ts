@@ -16,6 +16,17 @@ describe('editor page', () => {
     expect(page.findAll('.chart__cell--p')).toHaveLength(0)
   })
 
+  it('draws row 1 at the bottom, so tapping the bottom row changes row 1', async () => {
+    const page = await mountSuspended(EditorPage)
+    const groups = page.findAll('svg > g')
+    const y = (index: number) => Number(/translate\(0 ([\d.]+)\)/.exec(groups[index]!.attributes('transform')!)![1])
+    expect(y(0)).toBeGreaterThan(y(7))
+
+    await groups[0]!.findAll('.chart__cell')[0]!.trigger('click')
+    expect(useChartStore().matrix[0]![0]).toBe(1)
+    expect(page.findAll('[data-test="pattern"]')[0]!.text()).toBe('P1, K7')
+  })
+
   it('toggles a stitch on tap and updates the row pattern', async () => {
     const page = await mountSuspended(EditorPage)
     // Row 1, stitch 2.
