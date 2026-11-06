@@ -30,7 +30,12 @@ jobs:
           node-version: 24
           cache: npm
 
-      - run: npm ci
+      # npm install instead of npm ci: the lock file is written on Windows,
+      # where npm leaves out optional packages that only Linux needs
+      # (@emnapi/core, @emnapi/runtime for a WebAssembly fallback). npm ci on
+      # the Linux runner rejects that lock file as "out of sync"; npm install
+      # adds the missing packages and keeps every other version from the lock.
+      - run: npm install --no-audit --no-fund
 
       # Nothing is published if a test fails.
       - run: npm test
