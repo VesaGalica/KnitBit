@@ -120,6 +120,22 @@ describe('chart store', () => {
   })
 })
 
+describe('chart store – resize result', () => {
+  it('returns the number of P stitches a resize dropped', () => {
+    const store = useChartStore()
+    store.load(textToMatrix('FIEK'))
+    expect(store.resize(4, 4)).toBe(9)
+    expect(store.resize(8, 4)).toBe(0) // growing back brings K, drops nothing
+  })
+
+  it('returns 0 when nothing changes or resizing is blocked', () => {
+    const store = useChartStore()
+    expect(store.resize(8, 8)).toBe(0)
+    store.addParity()
+    expect(store.resize(4, 4)).toBe(0)
+  })
+})
+
 describe('chart store – parity', () => {
   it('adds a parity row and column as one undoable step', () => {
     const store = useChartStore()

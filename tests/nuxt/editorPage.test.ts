@@ -95,6 +95,43 @@ describe('editor page', () => {
     expect(page.findAll('.chart__cell')).toHaveLength(64)
   })
 
+  it('says how many purl stitches a shrink removed and undoes it', async () => {
+    useChartStore().load(textToMatrix('FIEK'))
+    const page = await mountSuspended(EditorPage)
+    const input = page.find('[data-test="width-input"]')
+    await input.setValue('4')
+    await input.trigger('change')
+
+    expect(page.find('[data-test="resize-notice"]').text()).toContain('9 purl stitches removed')
+    await page.find('[data-test="resize-undo"]').trigger('click')
+    expect(useChartStore().matrix).toEqual(textToMatrix('FIEK'))
+    expect(page.find('[data-test="resize-notice"]').exists()).toBe(false)
+    expect(page.find('[data-test="editor-text"]').text()).toBe('FIEK')
+  })
+
+  it('uses the singular for one removed purl stitch', async () => {
+    useChartStore().load([[0, 1]])
+    const page = await mountSuspended(EditorPage)
+    await page.find('[aria-label="Decrease width"]').trigger('click')
+    expect(page.find('[data-test="resize-notice"]').text()).toContain('1 purl stitch removed')
+  })
+
+  it('shows no notice when a shrink removes only K stitches, or when growing', async () => {
+    const page = await mountSuspended(EditorPage) // all K
+    await page.find('[aria-label="Decrease width"]').trigger('click')
+    await page.find('[data-test="width-increase"]').trigger('click')
+    expect(page.find('[data-test="resize-notice"]').exists()).toBe(false)
+  })
+
+  it('hides the notice after the next change', async () => {
+    useChartStore().load(textToMatrix('FIEK'))
+    const page = await mountSuspended(EditorPage)
+    await page.find('[aria-label="Decrease width"]').trigger('click')
+    expect(page.find('[data-test="resize-notice"]').exists()).toBe(true)
+    await page.findAll('.chart__cell')[0]!.trigger('click')
+    expect(page.find('[data-test="resize-notice"]').exists()).toBe(false)
+  })
+
   it('applies a typed height and clamps it to the limit', async () => {
     const page = await mountSuspended(EditorPage)
     const input = page.find('[data-test="height-input"]')
@@ -102,6 +139,34 @@ describe('editor page', () => {
     await input.trigger('change')
     expect(useChartStore().height).toBe(200)
     expect((input.element as HTMLInputElement).value).toBe('200')
+  })
+})
+
+describe('editor page – zoom', () => {
+  it('fits the chart to the screen by default', async () => {
+    const page = await mountSuspended(EditorPage)
+    expect(page.find('[data-zoom="fit"]').attributes('aria-selected')).toBe('true')
+    // Only a max-width, no fixed width: the chart scales with the card.
+    expect(page.find('svg.chart').attributes('style')).not.toMatch(/(^|;\s*)width:/)
+  })
+
+  it('draws 32px stitches in Large, inside a box that scrolls sideways', async () => {
+    useChartStore().resize(32, 8)
+    const page = await mountSuspended(EditorPage)
+    await page.find('[data-zoom="large"]').trigger('click')
+
+    const svg = page.find('[data-test="chart-scroll"] svg.chart')
+    const viewBoxWidth = Number(svg.attributes('viewBox')!.split(' ')[2])
+    // 32 px per stitch = 32/24 px per viewBox unit.
+    expect(svg.attributes('style')).toContain(`width: ${viewBoxWidth * 32 / 24}px`)
+    expect(viewBoxWidth * 32 / 24).toBeGreaterThanOrEqual(32 * 32)
+  })
+
+  it('still toggles the right stitch in Large', async () => {
+    const page = await mountSuspended(EditorPage)
+    await page.find('[data-zoom="large"]').trigger('click')
+    await page.findAll('.chart__cell')[3]!.trigger('click')
+    expect(useChartStore().matrix[0]).toEqual([0, 0, 0, 1, 0, 0, 0, 0])
   })
 })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chartToMatrix, createChart, matrixToChart, resizeChart, toggleCell } from '../../core/chart'
+import { chartToMatrix, createChart, matrixToChart, purlsRemovedByResize, resizeChart, toggleCell } from '../../core/chart'
 import { textToMatrix } from '../../core/encoding'
 import type { BitMatrix } from '../../core/types'
 
@@ -95,5 +95,30 @@ describe('resizeChart', () => {
   it('gives the original back after growing and shrinking', () => {
     const grown = resizeChart(matrixToChart(start), 5, 4)
     expect(chartToMatrix(resizeChart(grown, 3, 2))).toEqual(start)
+  })
+})
+
+describe('purlsRemovedByResize', () => {
+  const fiek = matrixToChart(textToMatrix('FIEK'))
+
+  it('counts the P stitches outside the kept part (FIEK at width 4)', () => {
+    // Stitches 5–8: F 0110, I 1001, E 0101, K 1011 → 2 + 2 + 2 + 3 P stitches.
+    expect(purlsRemovedByResize(fiek, 4, 4)).toBe(9)
+  })
+
+  it('counts removed rows too (FIEK at height 2 drops E and K)', () => {
+    // E 01000101 has 3 P, K 01001011 has 4.
+    expect(purlsRemovedByResize(fiek, 8, 2)).toBe(7)
+  })
+
+  it('is 0 when growing or when only K stitches are dropped', () => {
+    expect(purlsRemovedByResize(fiek, 10, 6)).toBe(0)
+    expect(purlsRemovedByResize(createChart(8, 8), 2, 2)).toBe(0)
+  })
+
+  it('matches the difference in P stitches before and after resizeChart', () => {
+    const purls = (cells: Uint8Array) => cells.filter(cell => cell === 1).length
+    const resized = resizeChart(fiek, 5, 3)
+    expect(purlsRemovedByResize(fiek, 5, 3)).toBe(purls(fiek.cells) - purls(resized.cells))
   })
 })

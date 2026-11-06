@@ -74,6 +74,23 @@ export function resizeChart(chart: FlatChart, width: number, height: number): Fl
   return resized
 }
 
+/**
+ * How many P stitches resizeChart(chart, width, height) would drop: the P
+ * stitches outside the part both sizes share. Growing never drops anything.
+ * The editor uses it to warn before a shrink silently deletes a pattern
+ * (e.g. FIEK at width 4 and back to 8 is no longer FIEK).
+ */
+export function purlsRemovedByResize(chart: FlatChart, width: number, height: number): number {
+  let removed = 0
+  for (let r = 0; r < chart.height; r++) {
+    for (let c = 0; c < chart.width; c++) {
+      const kept = r < height && c < width
+      if (!kept && chart.cells[r * chart.width + c] === 1) removed++
+    }
+  }
+  return removed
+}
+
 function assertSize(width: number, height: number): void {
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 0 || height < 0) {
     throw new Error(`Invalid chart size ${width}×${height}.`)

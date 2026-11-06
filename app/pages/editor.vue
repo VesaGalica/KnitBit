@@ -18,9 +18,49 @@ const sizes = computed(() => [
 
 function setSize(key: 'width' | 'height', value: number) {
   if (Number.isNaN(value)) return
-  if (key === 'width') chart.resize(value, chart.height)
-  else chart.resize(chart.width, value)
+  if (key === 'width') resizeTo(value, chart.height)
+  else resizeTo(chart.width, value)
 }
+
+// ---- Resize notice -----------------------------------------------------------
+
+/**
+ * Shrinking deletes the stitches that no longer fit; growing back brings K
+ * stitches, not the old pattern. So a resize that dropped P stitches says so
+ * and offers Undo. The notice remembers the `cells` array it was made for:
+ * any later change (tap, undo, another resize) replaces that array, and the
+ * notice disappears by itself, without a watcher.
+ */
+const resizeNotice = ref<{ removed: number, cells: Uint8Array } | null>(null)
+
+const visibleResizeNotice = computed(() =>
+  resizeNotice.value?.cells === chart.cells ? resizeNotice.value : null,
+)
+
+/** Every resize on this page goes through here (± buttons, typed size, "Set width to 8"). */
+function resizeTo(width: number, height: number) {
+  const removed = chart.resize(width, height)
+  // No "else null": a resize that removed nothing either changed `cells`
+  // (so an old notice is already hidden) or changed nothing at all (e.g. the
+  // same size typed again), and then the notice is still true.
+  if (removed > 0) resizeNotice.value = { removed, cells: chart.cells }
+}
+
+// ---- Zoom ------------------------------------------------------------------
+
+/**
+ * Fit scales the chart to the screen; at 32 stitches that is about 8px per
+ * stitch on a phone, too small to tap reliably. Large draws every stitch at
+ * 32px and lets the chart card scroll sideways. Not saved: it is a viewing
+ * choice, not part of the chart.
+ */
+type Zoom = 'fit' | 'large'
+const zoom = ref<Zoom>('fit')
+const zooms: { value: Zoom, label: string }[] = [
+  { value: 'fit', label: 'Fit' },
+  { value: 'large', label: 'Large' },
+]
+const LARGE_STITCH_PX = 32
 
 function onSizeInput(key: 'width' | 'height', event: Event) {
   const input = event.target as HTMLInputElement
@@ -155,6 +195,22 @@ const asText = computed(() => {
       >
         Remove parity to change the size.
       </p>
+      <div
+        v-if="visibleResizeNotice"
+        class="resize-notice"
+        role="status"
+        data-test="resize-notice"
+      >
+        <span>{{ plural(visibleResizeNotice.removed, 'purl stitch', 'purl stitches') }} removed</span>
+        <button
+          type="button"
+          class="button resize-notice__undo"
+          data-test="resize-undo"
+          @click="chart.undo()"
+        >
+          Undo
+        </button>
+      </div>
     </div>
 
     <div class="toolbar">
@@ -193,14 +249,40 @@ const asText = computed(() => {
           Tap a stitch: K ↔ P<template v-if="chart.hasParity"> · tinted, dashed = parity</template>
         </span>
       </div>
-      <ChartSvg
-        :matrix="chart.matrix"
-        :label="`Editable knitting chart, ${chart.height} rows of ${chart.width} stitches`"
-        :parity="chart.hasParity"
-        :highlight="highlight"
-        editable
-        @toggle="onToggle"
-      />
+      <div
+        class="segmented zoom"
+        role="tablist"
+        aria-label="Chart size"
+      >
+        <button
+          v-for="option in zooms"
+          :key="option.value"
+          type="button"
+          role="tab"
+          class="segmented__option"
+          :class="{ 'segmented__option--active': zoom === option.value }"
+          :aria-selected="zoom === option.value"
+          :data-zoom="option.value"
+          @click="zoom = option.value"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+      <!-- Scrolls sideways inside the card in Large, so the page itself never does. -->
+      <div
+        class="chart-scroll"
+        data-test="chart-scroll"
+      >
+        <ChartSvg
+          :matrix="chart.matrix"
+          :label="`Editable knitting chart, ${chart.height} rows of ${chart.width} stitches`"
+          :parity="chart.hasParity"
+          :highlight="highlight"
+          :stitch-size="zoom === 'large' ? LARGE_STITCH_PX : undefined"
+          editable
+          @toggle="onToggle"
+        />
+      </div>
     </div>
 
     <div class="card">
@@ -286,7 +368,7 @@ const asText = computed(() => {
           type="button"
           class="button set-width"
           data-test="set-width-8"
-          @click="chart.resize(8, chart.height)"
+          @click="resizeTo(8, chart.height)"
         >
           Set width to 8
         </button>
@@ -328,9 +410,14 @@ const asText = computed(() => {
   gap: var(--space-1);
 }
 
+/*
+ * − field +. The field needs room for "200" (3 digits at 16px ≈ 30px plus
+ * padding); on an iPhone SE the old 44px buttons left it only ~25px, which
+ * cut off "32". 40px buttons are still easy to hit.
+ */
 .size__controls {
   display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  grid-template-columns: 40px minmax(3.5rem, 1fr) 40px;
   gap: var(--space-1);
 }
 
@@ -343,6 +430,52 @@ const asText = computed(() => {
   min-width: 0;
   padding: 0 var(--space-1);
   text-align: center;
+  /* No browser spinner arrows: − and + do that job, and the arrows took
+     about 15px of the field in desktop and emulated browsers. */
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.size__input::-webkit-inner-spin-button,
+.size__input::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+/* Very narrow phones (320px): width and height one below the other. */
+@media (max-width: 359px) {
+  .sizes {
+    grid-template-columns: 1fr;
+  }
+}
+
+.resize-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: 10px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.resize-notice__undo {
+  width: auto;
+  min-height: 44px;
+}
+
+.zoom {
+  margin-bottom: var(--space-3);
+}
+
+/* In Large the chart is wider than the card; only this box scrolls. */
+.chart-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .size__input:disabled {

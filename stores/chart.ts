@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { chartToMatrix, createChart, matrixToChart, resizeChart, toggleCell } from '../core/chart'
+import { chartToMatrix, createChart, matrixToChart, purlsRemovedByResize, resizeChart, toggleCell } from '../core/chart'
 import type { FlatChart } from '../core/chart'
 import { addParity } from '../core/parity'
 import type { SavedChart } from '../core/storage'
@@ -75,12 +75,19 @@ export const useChartStore = defineStore('chart', {
       this.apply(toggleCell(this.current(), row, col))
     },
 
-    resize(width: number, height: number) {
-      if (!this.canResize) return
+    /**
+     * Changes the size (clamped to the limits) as one undoable step.
+     * Returns how many P stitches were dropped, so the editor can offer to
+     * undo a shrink that deleted part of the pattern; 0 if nothing changed.
+     */
+    resize(width: number, height: number): number {
+      if (!this.canResize) return 0
       const w = clamp(width, MIN_SIZE, MAX_WIDTH)
       const h = clamp(height, MIN_SIZE, MAX_HEIGHT)
-      if (w === this.width && h === this.height) return
+      if (w === this.width && h === this.height) return 0
+      const removed = purlsRemovedByResize(this.current(), w, h)
       this.apply(resizeChart(this.current(), w, h))
+      return removed
     },
 
     /**

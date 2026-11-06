@@ -23,6 +23,10 @@ import type { BitMatrix } from '~~/core/types'
  * it grows. Only the drawing position is flipped: row indexes, numbers,
  * labels and toggle events stay the same as in the data.
  * `currentRow` (0-based) frames the row being knitted.
+ *
+ * Normally the chart scales to the width of its container ("Fit"). With
+ * `stitchSize` (in px) every stitch is drawn that big instead, and the chart
+ * may be wider than the screen; the parent then scrolls it sideways.
  */
 const props = defineProps<{
   matrix: BitMatrix
@@ -32,6 +36,7 @@ const props = defineProps<{
   parity?: boolean
   highlight?: CellPosition | null
   currentRow?: number | null
+  stitchSize?: number
 }>()
 
 const emit = defineEmits<{
@@ -72,6 +77,11 @@ function rowY(row: number): number {
   return PAD + (props.matrix.length - 1 - row) * CELL
 }
 
+/** Fit: scale to the container (but not above 1.5×). Fixed: px per viewBox unit = stitchSize / CELL. */
+const sizeStyle = computed(() => props.stitchSize
+  ? { width: `${width.value * props.stitchSize / CELL}px`, maxWidth: 'none' }
+  : { maxWidth: `${width.value * 1.5}px` })
+
 function isCurrentRow(row: number): boolean {
   return props.currentRow === row
 }
@@ -81,7 +91,7 @@ function isCurrentRow(row: number): boolean {
   <svg
     class="chart"
     :viewBox="`0 0 ${width} ${height}`"
-    :style="{ maxWidth: `${width * 1.5}px` }"
+    :style="sizeStyle"
     :role="editable ? 'group' : 'img'"
     :aria-label="label"
   >
@@ -181,6 +191,8 @@ function isCurrentRow(row: number): boolean {
   display: block;
   width: 100%;
   height: auto;
+  /* A fixed-size chart (stitchSize) must not be squeezed by its flex/grid parent. */
+  flex-shrink: 0;
 }
 
 .chart__cell {
