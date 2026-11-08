@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
-import { chartToMatrix, createChart, matrixToChart, resizeChart, toggleCell } from '../core/chart'
+import { chartToMatrix, createChart, matrixToChart, purlsRemovedByResize, resizeChart, toggleCell } from '../core/chart'
 import type { FlatChart } from '../core/chart'
 import { addParity } from '../core/parity'
-import type { KnitMode } from '../core/rows'
 import type { SavedChart } from '../core/storage'
 import type { BitMatrix } from '../core/types'
 
@@ -36,7 +35,7 @@ export interface ChartSnapshot extends FlatChart {
  * - The old array is never changed again, so undo/redo can keep references
  *   to old charts without copying them.
  *
- * `knitRow` and `knitMode` are the knitter's place on the knit page. They are
+ * `knitRow` is the knitter's place on the knit page. It is
  * not part of the undo history: moving to the next row is progress, not an
  * edit of the chart. A new chart (load) or a cleared chart starts at row 1;
  * any other change keeps the place, so fixing one stitch mid-way does not
@@ -50,7 +49,6 @@ export const useChartStore = defineStore('chart', {
     hasParity: false,
     /** Current row on the knit page, 1-based, always between 1 and height. */
     knitRow: 1,
-    knitMode: 'flat' as KnitMode,
     past: [] as ChartSnapshot[],
     future: [] as ChartSnapshot[],
   }),
@@ -77,12 +75,19 @@ export const useChartStore = defineStore('chart', {
       this.apply(toggleCell(this.current(), row, col))
     },
 
-    resize(width: number, height: number) {
-      if (!this.canResize) return
+    /**
+     * Changes the size (clamped to the limits) as one undoable step.
+     * Returns how many P stitches were dropped, so the editor can offer to
+     * undo a shrink that deleted part of the pattern; 0 if nothing changed.
+     */
+    resize(width: number, height: number): number {
+      if (!this.canResize) return 0
       const w = clamp(width, MIN_SIZE, MAX_WIDTH)
       const h = clamp(height, MIN_SIZE, MAX_HEIGHT)
-      if (w === this.width && h === this.height) return
+      if (w === this.width && h === this.height) return 0
+      const removed = purlsRemovedByResize(this.current(), w, h)
       this.apply(resizeChart(this.current(), w, h))
+      return removed
     },
 
     /**
@@ -107,7 +112,7 @@ export const useChartStore = defineStore('chart', {
     },
 
     /**
-     * Adds a parity column on the right and a parity row at the bottom
+     * Adds a parity column on the right and a parity row after the last row
      * (see core/parity.ts), as one undoable step. The chart grows by one in
      * each direction, which may go past MAX_WIDTH / MAX_HEIGHT: those limits
      * only apply to the size controls.
@@ -120,7 +125,7 @@ export const useChartStore = defineStore('chart', {
     /** Removes the parity row and column again, as one undoable step. */
     removeParity() {
       if (!this.hasParity) return
-      // resizeChart keeps the top-left part, so shrinking by one in each
+      // resizeChart keeps the cast-on corner (row 1, stitch 1), so shrinking by one in each
       // direction drops exactly the last row and the last column.
       this.apply(resizeChart(this.current(), this.width - 1, this.height - 1), false)
     },
@@ -133,7 +138,6 @@ export const useChartStore = defineStore('chart', {
     restore(saved: SavedChart) {
       this.show(saved)
       this.knitRow = saved.knitRow
-      this.knitMode = saved.knitMode
       this.past = []
       this.future = []
     },
@@ -148,10 +152,6 @@ export const useChartStore = defineStore('chart', {
     /** Moves to the previous row; stays on row 1. */
     previousRow() {
       this.knitRow = Math.max(this.knitRow - 1, 1)
-    },
-
-    setKnitMode(mode: KnitMode) {
-      this.knitMode = mode
     },
 
     undo() {

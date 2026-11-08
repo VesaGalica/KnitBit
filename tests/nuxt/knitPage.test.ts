@@ -53,29 +53,29 @@ describe('knit page', () => {
     expect(squares.join('')).toBe('01100010')
   })
 
-  it('changes the instruction of a wrong-side row when switching to round', async () => {
+  it('shows a wrong-side row left to right with K and P swapped', async () => {
     const chart = useChartStore()
     chart.load(textToMatrix('FIEK'))
-    chart.nextRow() // row 2: "I" = 01001001
+    chart.nextRow() // row 2: "I" = 01001001, inverted → 10110110
     const page = await mountSuspended(KnitPage)
 
     expect(page.find('[data-test="row-side"]').text()).toBe('WS')
     expect(page.find('[data-test="instruction"]').text()).toBe('P1, K1, P2, K1, P2, K1')
-
-    await page.find('[data-mode="round"]').trigger('click')
-    // In the round row 2 is RS: reversed, not inverted → 10010010.
-    expect(page.find('[data-test="row-side"]').text()).toBe('RS')
-    expect(page.find('[data-test="instruction"]').text()).toBe('P1, K2, P1, K2, P1, K1')
   })
 
-  it('keeps the current row and mode after a reload', async () => {
+  it('has no flat/round switch (the app knits flat only)', async () => {
+    const page = await mountSuspended(KnitPage)
+    expect(page.find('[data-mode]').exists()).toBe(false)
+    expect(page.text()).not.toMatch(/round/i)
+  })
+
+  it('keeps the current row after a reload', async () => {
     const chart = useChartStore()
     const stop = startSavingChart(chart)
     chart.load(textToMatrix('FIEK'))
     const page = await mountSuspended(KnitPage)
     await page.find('[data-test="next"]').trigger('click')
     await page.find('[data-test="next"]').trigger('click')
-    await page.find('[data-mode="round"]').trigger('click')
     stop()
     page.unmount()
     const saved = localStorage.getItem(CHART_STORAGE_KEY)!
@@ -90,7 +90,6 @@ describe('knit page', () => {
 
     const reloaded = await mountSuspended(KnitPage)
     expect(reloaded.find('[data-test="progress"]').text()).toBe('Row 3 of 4')
-    expect(reloaded.find('[data-mode="round"]').attributes('aria-selected')).toBe('true')
   })
 
   it('marks the current row on the chart, drawn with row 1 at the bottom', async () => {
@@ -121,6 +120,39 @@ describe('knit page', () => {
     const page = await mountSuspended(KnitPage)
     expect(page.find('[data-test="wake-lock-unsupported"]').exists()).toBe(true)
     expect(page.find('[data-test="wake-lock"]').exists()).toBe(false)
+  })
+
+  it('advises Auto-Lock "Never" when the browser refuses the wake lock', async () => {
+    Object.defineProperty(navigator, 'wakeLock', {
+      configurable: true,
+      value: { request: async () => { throw new Error('NotAllowedError') } },
+    })
+    const page = await mountSuspended(KnitPage)
+    await new Promise(resolve => setTimeout(resolve, 0)) // let the request fail
+    expect(page.find('[data-test="wake-lock"]').text()).toContain('Screen may turn off')
+    expect(page.find('[data-test="wake-lock-failed"]').text()).toContain('Set Auto-Lock to Never')
+    page.unmount()
+  })
+
+  it('shows no Auto-Lock advice while the screen is kept on', async () => {
+    const sentinel = { addEventListener: () => {}, release: async () => {} }
+    Object.defineProperty(navigator, 'wakeLock', {
+      configurable: true,
+      value: { request: async () => sentinel },
+    })
+    const page = await mountSuspended(KnitPage)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(page.find('[data-test="wake-lock-failed"]').exists()).toBe(false)
+    page.unmount()
+  })
+
+  it('has Previous, the progress and Next in one row of the stepper', async () => {
+    useChartStore().load(textToMatrix('FIEK'))
+    const page = await mountSuspended(KnitPage)
+    const row = page.find('.stepper__row')
+    expect(row.find('[data-test="previous"]').exists()).toBe(true)
+    expect(row.find('[data-test="progress"]').text()).toBe('Row 1 of 4')
+    expect(row.find('[data-test="next"]').exists()).toBe(true)
   })
 
   it('keeps the screen on and shows it when the wake lock is supported', async () => {

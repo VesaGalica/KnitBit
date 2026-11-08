@@ -14,9 +14,9 @@ import type { Bit, BitMatrix, BitRow } from './types'
  * around. A flat knitted piece has two real edges that are not joined, so the
  * first stitch of a row has no left neighbour, and treating "nothing" as the
  * plain knit stitch is the natural choice. Wrapping around (the last stitch is
- * the left neighbour of the first) would only describe knitting in the round,
- * where the row really is a circle. The edge rule only matters once the
- * pattern reaches the side of the chart.
+ * the left neighbour of the first) would describe a row that is a closed
+ * circle, as in knitting in the round, which the app does not support. The
+ * edge rule only matters once the pattern reaches the side of the chart.
  */
 
 /** One neighbourhood of the rule table: left, centre, right → new stitch. */

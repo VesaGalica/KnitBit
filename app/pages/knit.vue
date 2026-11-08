@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { knittingRows } from '~~/core/rows'
-import type { KnitMode } from '~~/core/rows'
 import { useChartStore } from '~~/stores/chart'
 
 useHead({ title: 'Knit · KnitBit' })
@@ -12,9 +11,9 @@ const chart = useChartStore()
 /**
  * Every row of the active chart as the knitter works it (core/rows.ts):
  * chart row 1 first, RS rows right to left, WS rows left to right and
- * inverted. Recomputed when the chart or the flat/round mode changes.
+ * inverted. Recomputed when the chart changes.
  */
-const rows = computed(() => knittingRows(chart.matrix, chart.knitMode))
+const rows = computed(() => knittingRows(chart.matrix))
 
 /** The store keeps knitRow between 1 and height, so this row always exists. */
 const current = computed(() => rows.value[chart.knitRow - 1]!)
@@ -27,11 +26,6 @@ const isLast = computed(() => chart.knitRow >= chart.height)
  * most likely the user has not made a chart yet, so a hint says where to.
  */
 const isAllKnit = computed(() => chart.cells.every(cell => cell === 0))
-
-const MODES: Array<{ value: KnitMode, label: string }> = [
-  { value: 'flat', label: 'Flat' },
-  { value: 'round', label: 'Round' },
-]
 
 const SIDE_TEXT = {
   RS: 'Right side · work the chart row right to left',
@@ -102,26 +96,6 @@ function toggleWakeLock() {
       </p>
     </div>
 
-    <div
-      class="segmented"
-      role="tablist"
-      aria-label="Knitting method"
-    >
-      <button
-        v-for="mode in MODES"
-        :key="mode.value"
-        type="button"
-        role="tab"
-        class="segmented__option"
-        :class="{ 'segmented__option--active': chart.knitMode === mode.value }"
-        :aria-selected="chart.knitMode === mode.value"
-        :data-mode="mode.value"
-        @click="chart.setKnitMode(mode.value)"
-      >
-        {{ mode.label }}
-      </button>
-    </div>
-
     <!-- The current row, readable from a lap at arm's length. -->
     <div
       class="card current"
@@ -176,7 +150,6 @@ function toggleWakeLock() {
           :matrix="chart.matrix"
           :parity="chart.hasParity"
           :current-row="chart.knitRow - 1"
-          bottom-up
           label="Chart, row 1 at the bottom, current row framed"
         />
       </div>
@@ -190,25 +163,34 @@ function toggleWakeLock() {
     <!-- Only visible when printing (see main.css). -->
     <PrintSheet
       :matrix="chart.matrix"
-      :mode="chart.knitMode"
       :parity="chart.hasParity"
     />
 
     <div class="wake">
-      <button
-        v-if="wakeLock.isSupported.value"
-        type="button"
-        class="wake__toggle"
-        :aria-pressed="wakeLock.isActive.value"
-        data-test="wake-lock"
-        @click="toggleWakeLock"
-      >
-        <span
-          class="wake__dot"
-          :class="{ 'wake__dot--on': wakeLock.isActive.value }"
-        />
-        {{ wakeLock.isActive.value ? 'Screen stays on' : 'Screen may turn off – tap to keep it on' }}
-      </button>
+      <template v-if="wakeLock.isSupported.value">
+        <button
+          type="button"
+          class="wake__toggle"
+          :aria-pressed="wakeLock.isActive.value"
+          data-test="wake-lock"
+          @click="toggleWakeLock"
+        >
+          <span
+            class="wake__dot"
+            :class="{ 'wake__dot--on': wakeLock.isActive.value }"
+          />
+          {{ wakeLock.isActive.value ? 'Screen stays on' : 'Screen may turn off – tap to keep it on' }}
+        </button>
+        <!-- The browser has the API but said no (e.g. Low Power Mode): a tap may
+             not help either, so give the advice that always works. -->
+        <p
+          v-if="wakeLock.failed.value && !wakeLock.isActive.value"
+          class="field__hint"
+          data-test="wake-lock-failed"
+        >
+          The screen could not be kept on (Low Power Mode can block it). Set Auto-Lock to Never while you knit.
+        </p>
+      </template>
       <p
         v-else
         class="field__hint"
@@ -218,21 +200,11 @@ function toggleWakeLock() {
       </p>
     </div>
 
-    <!-- Sticky above the bottom navigation, so the buttons never scroll away. -->
+    <!-- Sticky above the bottom navigation, so the buttons never scroll away.
+         One line (Previous · progress · Next) to keep it low: on an iPhone SE
+         the old three-line panel (~130px) covered the chart. -->
     <div class="stepper">
-      <p
-        class="stepper__progress"
-        data-test="progress"
-      >
-        Row {{ chart.knitRow }} of {{ chart.height }}
-      </p>
-      <progress
-        class="stepper__bar"
-        :value="chart.knitRow"
-        :max="chart.height"
-        aria-hidden="true"
-      />
-      <div class="stepper__buttons">
+      <div class="stepper__row">
         <button
           type="button"
           class="button stepper__button"
@@ -242,6 +214,12 @@ function toggleWakeLock() {
         >
           ← Previous
         </button>
+        <p
+          class="stepper__progress"
+          data-test="progress"
+        >
+          Row {{ chart.knitRow }} of {{ chart.height }}
+        </p>
         <button
           type="button"
           class="button button--filled stepper__button"
@@ -252,11 +230,26 @@ function toggleWakeLock() {
           Next →
         </button>
       </div>
+      <progress
+        class="stepper__bar"
+        :value="chart.knitRow"
+        :max="chart.height"
+        aria-hidden="true"
+      />
     </div>
   </section>
 </template>
 
 <style scoped>
+/*
+ * Height of the sticky stepper: 52px buttons + 4px bar + gap and padding.
+ * Used below to size the chart box, so the box always fits on screen
+ * between the top of the screen and the stepper.
+ */
+.page {
+  --stepper-height: 84px;
+}
+
 .hint a {
   color: var(--color-accent);
   font-weight: 600;
@@ -329,9 +322,22 @@ function toggleWakeLock() {
   background: var(--color-stitch-p);
 }
 
-/* Long charts (up to 1000 rows) scroll inside the card, not the whole page. */
+/*
+ * Long charts (up to 1000 rows) scroll inside the card, not the whole page.
+ * The box is never taller than the space between the status bar and the
+ * stepper (minus the bottom navigation and room for the card heading), so
+ * scrolling the page can always bring the whole box into view above the
+ * stepper. dvh = the visible height, without Safari's toolbars. At least
+ * 120px, so a landscape phone still shows a few rows.
+ */
 .chart-box {
-  max-height: 40vh;
+  max-height: max(
+    120px,
+    calc(
+      100dvh - var(--safe-top) - var(--safe-bottom) - var(--nav-height)
+      - var(--stepper-height) - 6rem
+    )
+  );
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -368,34 +374,39 @@ function toggleWakeLock() {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3);
+  padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background: var(--color-surface);
   box-shadow: 0 -2px 8px rgb(0 0 0 / 0.08);
 }
 
+.stepper__row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .stepper__progress {
   margin: 0;
+  font-size: 0.875rem;
   font-weight: 600;
   text-align: center;
+  white-space: nowrap;
 }
 
 .stepper__bar {
+  display: block;
   width: 100%;
-  height: 6px;
+  height: 4px;
   accent-color: var(--color-accent);
 }
 
-.stepper__buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-}
-
-/* Big targets: easy to hit with a needle in each hand. */
+/* Still big targets (52px, above the 44px minimum): easy to hit with a needle in each hand. */
 .stepper__button {
-  min-height: 64px;
-  font-size: 1.125rem;
+  min-height: 52px;
+  padding: 0 var(--space-2);
+  white-space: nowrap;
 }
 </style>

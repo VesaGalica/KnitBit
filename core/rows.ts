@@ -8,13 +8,13 @@ import type { Bit, BitMatrix, BitRow } from './types'
  * from the front. Knitting it raises two questions the chart does not answer.
  *
  * 1. Which chart row is knitted first?
- *    Chart row 1 (the top row on screen) is knitted row 1, the first row
- *    after casting on. Row r of a chart is byte r of the text, generation r
- *    of an automaton or state r of a sort, so the knitter works through the
+ *    Chart row 1 (index 0) is knitted row 1, the first row after casting
+ *    on. Row r of a chart is byte r of the text, generation r of an
+ *    automaton or state r of a sort, so the knitter works through the
  *    computation forwards in time, and every page uses the same row numbers.
- *    The price: the finished fabric, held with the cast-on edge at the
- *    bottom, is the chart turned upside down. The knit page, the print sheet
- *    and the SVG download therefore draw the chart bottom-up, like the fabric.
+ *    The fabric grows upwards from the cast-on edge, so every chart in the
+ *    app (screen, print sheet and SVG download) is drawn bottom-up: row 1 at
+ *    the bottom, the picture looks like the fabric.
  *
  * 2. In which direction is a row worked, and which stitch is made?
  *    Stitches are always taken from the tip of the left needle.
@@ -27,12 +27,10 @@ import type { Bit, BitMatrix, BitRow } from './types'
  *      stitch made from the back shows as a purl on the front, and the other
  *      way round.
  *
- * Flat knitting turns the work after every row, so RS and WS rows alternate
- * (odd rows RS, even rows WS). Knitting in the round never turns the work,
- * so every row is an RS row.
+ * The app supports flat knitting only. Flat knitting turns the work after
+ * every row, so RS and WS rows alternate: odd rows RS, even rows WS.
  */
 
-export type KnitMode = 'flat' | 'round'
 export type Side = 'RS' | 'WS'
 
 /** One row as the knitter works it. */
@@ -46,9 +44,9 @@ export interface KnittingRow {
   instruction: string
 }
 
-/** Row 1 is always RS; in flat knitting every even row is WS. */
-export function rowSide(number: number, mode: KnitMode): Side {
-  return mode === 'flat' && number % 2 === 0 ? 'WS' : 'RS'
+/** Odd rows (row 1 first) are RS, even rows WS, because the work is turned after every row. */
+export function rowSide(number: number): Side {
+  return number % 2 === 0 ? 'WS' : 'RS'
 }
 
 /**
@@ -70,10 +68,10 @@ export function fromWorkingOrder(stitches: BitRow, side: Side): BitRow {
 }
 
 /** The whole chart as knitting rows, in knitting order (chart row 1 first). */
-export function knittingRows(matrix: BitMatrix, mode: KnitMode): KnittingRow[] {
+export function knittingRows(matrix: BitMatrix): KnittingRow[] {
   return matrix.map((chartRow, index) => {
     const number = index + 1
-    const side = rowSide(number, mode)
+    const side = rowSide(number)
     const stitches = toWorkingOrder(chartRow, side)
     return { number, side, stitches, instruction: rowToShortestRLE(stitches) }
   })
@@ -82,7 +80,7 @@ export function knittingRows(matrix: BitMatrix, mode: KnitMode): KnittingRow[] {
 /**
  * "Knits" the rows back into a chart, i.e. what the RS of the fabric shows.
  * Used to prove that knittingRows loses nothing: rowsToMatrix(knittingRows(m))
- * equals m. Each row carries its own side, so no mode is needed.
+ * equals m. Each row carries its own side.
  */
 export function rowsToMatrix(rows: KnittingRow[]): BitMatrix {
   return rows.map(row => fromWorkingOrder(row.stitches, row.side))

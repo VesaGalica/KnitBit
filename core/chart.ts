@@ -57,8 +57,11 @@ export function toggleCell(chart: FlatChart, row: number, col: number): FlatChar
 
 /**
  * Returns a chart with a new size. Stitches in the part both sizes share
- * (the top-left corner) are kept; new stitches are K (0). Growing and then
- * shrinking back therefore gives the original chart.
+ * (rows from row 1, stitches from stitch 1) are kept; new stitches are K (0).
+ * Charts are drawn with row 1 at the bottom, so this keeps the cast-on
+ * corner (bottom left): new rows are added at the top (knitted later), new
+ * stitches on the right. Growing and then shrinking back therefore gives the
+ * original chart.
  */
 export function resizeChart(chart: FlatChart, width: number, height: number): FlatChart {
   const resized = createChart(width, height)
@@ -69,6 +72,23 @@ export function resizeChart(chart: FlatChart, width: number, height: number): Fl
     resized.cells.set(chart.cells.subarray(start, start + keepWidth), r * width)
   }
   return resized
+}
+
+/**
+ * How many P stitches resizeChart(chart, width, height) would drop: the P
+ * stitches outside the part both sizes share. Growing never drops anything.
+ * The editor uses it to warn before a shrink silently deletes a pattern
+ * (e.g. FIEK at width 4 and back to 8 is no longer FIEK).
+ */
+export function purlsRemovedByResize(chart: FlatChart, width: number, height: number): number {
+  let removed = 0
+  for (let r = 0; r < chart.height; r++) {
+    for (let c = 0; c < chart.width; c++) {
+      const kept = r < height && c < width
+      if (!kept && chart.cells[r * chart.width + c] === 1) removed++
+    }
+  }
+  return removed
 }
 
 function assertSize(width: number, height: number): void {

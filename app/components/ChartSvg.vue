@@ -17,10 +17,16 @@ import type { BitMatrix } from '~~/core/types'
  * (tinted, dashed border). `highlight` marks one stitch, e.g. the one a
  * parity check found to be wrong.
  *
- * With `bottomUp`, row 1 is drawn at the bottom instead of the top, the way
- * the fabric grows from the cast-on edge (used by the knit page, see
- * core/rows.ts). Only the drawing position changes: row indexes, numbers and
- * events stay the same. `currentRow` (0-based) frames the row being knitted.
+ * Every chart in the app is drawn bottom-up: row 1 (matrix index 0, the
+ * first row knitted after casting on, see core/rows.ts) is at the bottom,
+ * with "Row 1 – cast on" under it, so the picture looks like the fabric as
+ * it grows. Only the drawing position is flipped: row indexes, numbers,
+ * labels and toggle events stay the same as in the data.
+ * `currentRow` (0-based) frames the row being knitted.
+ *
+ * Normally the chart scales to the width of its container ("Fit"). With
+ * `stitchSize` (in px) every stitch is drawn that big instead, and the chart
+ * may be wider than the screen; the parent then scrolls it sideways.
  */
 const props = defineProps<{
   matrix: BitMatrix
@@ -29,8 +35,8 @@ const props = defineProps<{
   editable?: boolean
   parity?: boolean
   highlight?: CellPosition | null
-  bottomUp?: boolean
   currentRow?: number | null
+  stitchSize?: number
 }>()
 
 const emit = defineEmits<{
@@ -56,16 +62,25 @@ const CELL = 24
 const LEFT = 28 // row numbers
 const RIGHT = 48 // row labels
 const PAD = 2
+const FOOTER = 16 // "Row 1 – cast on" under the bottom row
 
 const columns = computed(() => Math.max(0, ...props.matrix.map(row => row.length)))
 const width = computed(() => LEFT + columns.value * CELL + (props.rowLabels ? RIGHT : 0) + PAD)
-const height = computed(() => props.matrix.length * CELL + PAD * 2)
+const chartBottom = computed(() => PAD + props.matrix.length * CELL)
+const height = computed(() => chartBottom.value + (props.matrix.length > 0 ? FOOTER : 0) + PAD)
 
-/** Top edge of chart row `row` (0-based) in viewBox units. */
+/**
+ * Top edge of chart row `row` (0-based) in viewBox units. Row 0 (row 1) is
+ * drawn last, at the bottom; the last row of the data is at the top.
+ */
 function rowY(row: number): number {
-  const position = props.bottomUp ? props.matrix.length - 1 - row : row
-  return PAD + position * CELL
+  return PAD + (props.matrix.length - 1 - row) * CELL
 }
+
+/** Fit: scale to the container (but not above 1.5×). Fixed: px per viewBox unit = stitchSize / CELL. */
+const sizeStyle = computed(() => props.stitchSize
+  ? { width: `${width.value * props.stitchSize / CELL}px`, maxWidth: 'none' }
+  : { maxWidth: `${width.value * 1.5}px` })
 
 function isCurrentRow(row: number): boolean {
   return props.currentRow === row
@@ -76,7 +91,7 @@ function isCurrentRow(row: number): boolean {
   <svg
     class="chart"
     :viewBox="`0 0 ${width} ${height}`"
-    :style="{ maxWidth: `${width * 1.5}px` }"
+    :style="sizeStyle"
     :role="editable ? 'group' : 'img'"
     :aria-label="label"
   >
@@ -123,6 +138,14 @@ function isCurrentRow(row: number): boolean {
       >{{ rowLabels[r] }}</text>
     </g>
 
+    <text
+      v-if="matrix.length > 0"
+      class="chart__cast-on"
+      :x="LEFT"
+      :y="chartBottom + FOOTER / 2 + 1"
+      dominant-baseline="central"
+    >Row 1 – cast on</text>
+
     <!-- Drawn after all stitches so they sit on top; they never catch taps. -->
     <g
       v-if="parity && matrix.length > 0"
@@ -168,6 +191,8 @@ function isCurrentRow(row: number): boolean {
   display: block;
   width: 100%;
   height: auto;
+  /* A fixed-size chart (stitchSize) must not be squeezed by its flex/grid parent. */
+  flex-shrink: 0;
 }
 
 .chart__cell {
@@ -227,7 +252,8 @@ function isCurrentRow(row: number): boolean {
 }
 
 .chart__number,
-.chart__label {
+.chart__label,
+.chart__cast-on {
   fill: var(--color-muted);
   font-family: var(--font-mono);
   font-size: 11px;
@@ -235,6 +261,10 @@ function isCurrentRow(row: number): boolean {
 
 .chart__label {
   fill: var(--color-text);
+}
+
+.chart__cast-on {
+  font-family: inherit;
 }
 
 /* After .chart__number, so its colour wins. */

@@ -115,6 +115,22 @@ describe('algorithms page – sorting', () => {
       .toEqual(['Start', '1', '2', '3'])
   })
 
+  it('draws the start state at the bottom with its bars rising from the cast-on edge', async () => {
+    const page = await mountSuspended(AlgorithmsPage)
+    await page.find('[data-test="sort-preset-worst"]').trigger('click')
+    const card = page.find('[data-test="sort-chart"]')
+    const groups = card.findAll('svg > g')
+    const y = (index: number) => Number(/translate\(0 ([\d.]+)\)/.exec(groups[index]!.attributes('transform')!)![1])
+
+    // Row 1 is labelled "Start" and is the lowest row on screen.
+    expect(groups[0]!.find('.chart__label').text()).toBe('Start')
+    expect(y(0)).toBe(Math.max(...groups.map((_, i) => y(i))))
+    // 8, 7, …, 1: the bottom row of the start block has a P in every column,
+    // the 8th row only in the first column (the 8).
+    expect(chartRows(card)[0]).toBe('11111111')
+    expect(chartRows(card)[7]).toBe('10000000')
+  })
+
   it('shows the error for an invalid list', async () => {
     const page = await mountSuspended(AlgorithmsPage)
     await page.find('[data-test="sort-input"]').setValue('5, 9')

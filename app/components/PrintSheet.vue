@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { knittingRows } from '~~/core/rows'
-import type { KnitMode } from '~~/core/rows'
 import { chartToSvg, ORIENTATION_NOTE } from '~~/core/svgExport'
 import type { BitMatrix } from '~~/core/types'
 
@@ -15,7 +14,6 @@ import type { BitMatrix } from '~~/core/types'
  */
 const props = defineProps<{
   matrix: BitMatrix
-  mode: KnitMode
   parity?: boolean
 }>()
 
@@ -25,12 +23,9 @@ const title = computed(() => chartTitle(props.matrix[0]?.length ?? 0, props.matr
 // the only text it is given (the title), so v-html cannot inject anything.
 const svg = computed(() => chartToSvg(props.matrix, { title: title.value, parity: props.parity }))
 
-const rows = computed(() => knittingRows(props.matrix, props.mode))
+const rows = computed(() => knittingRows(props.matrix))
 
-const MODE_NOTE: Record<KnitMode, string> = {
-  flat: 'Knitted flat: odd rows are right side (RS), worked right to left; even rows are wrong side (WS), worked left to right with K and P swapped. The instructions below already include this.',
-  round: 'Knitted in the round: every row is right side (RS), worked right to left. The instructions below already include this.',
-}
+const ROWS_NOTE = 'Knitted flat: odd rows are right side (RS), worked right to left; even rows are wrong side (WS), worked left to right with K and P swapped. The instructions below already include this.'
 </script>
 
 <template>
@@ -45,7 +40,7 @@ const MODE_NOTE: Record<KnitMode, string> = {
       {{ ORIENTATION_NOTE }}
     </p>
     <p class="print-sheet__note">
-      {{ MODE_NOTE[mode] }}
+      {{ ROWS_NOTE }}
     </p>
     <!-- eslint-disable vue/no-v-html -- trusted string, see the script comment -->
     <div
